@@ -3,7 +3,7 @@ import Bemol from '../assets/Marca_Bemol.svg';
 
 function Header() {
   return (
-    <header className="bg-white-500 text-blue-500 shadow-2xl rounded-2xl  p-4 flex items-center justify-between">
+    <header className="bg-white-500 text-blue-500 shadow-2xl rounded-2xl  p-1 flex items-center justify-between">
       <div className="flex items-center">
         <img src={Bemol} alt="Logo" className="h-18 w-18 mr-9" />
         <div>
