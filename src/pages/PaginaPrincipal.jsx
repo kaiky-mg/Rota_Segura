@@ -4,7 +4,7 @@ import 'leaflet/dist/leaflet.css';
 import 'leaflet-routing-machine/dist/leaflet-routing-machine.css'; // CSS da Rota
 import '../App.css';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
-import L from 'leaflet';
+import L, { icon } from 'leaflet';
 import 'leaflet-routing-machine'; // Importa a lógica da máquina de rota
 import Header from '../components/Header';
 import FloatingActionButton from '../components/FloatingActionButton';

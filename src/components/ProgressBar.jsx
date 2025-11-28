@@ -1,6 +1,8 @@
 import React from 'react';
 
 function ProgressBar({ progress, startLocation, endLocation, startTime, remainingTime, arrivalTime }) {
+  const roundedProgress = Math.round(progress);
+
   return (
     <div className="fixed bottom-15 left-0 w-full bg-white shadow-lg rounded-lg p-4 z-[1000]">
       <h2 className="text-lg font-semibold mb-2">Progresso da Viagem</h2>
@@ -9,7 +11,7 @@ function ProgressBar({ progress, startLocation, endLocation, startTime, remainin
           <span className="text-blue-500 text-xl mr-2">📍</span>
           <span>{startLocation}</span>
         </div>
-        <span className="text-lg font-bold">{progress}%</span>
+        <span className="text-lg font-bold">{roundedProgress}%</span>
         <div className="flex items-center">
           <span className="text-blue-500 text-xl mr-2">🏁</span>
           <span>{endLocation}</span>
@@ -18,7 +20,7 @@ function ProgressBar({ progress, startLocation, endLocation, startTime, remainin
       <div className="w-full bg-gray-200 h-2 rounded-full overflow-hidden mb-4">
         <div
           className="bg-blue-500 h-2 rounded-full transition-all"
-          style={{ width: `${progress}%` }}
+          style={{ width: `${roundedProgress}%` }}
         ></div>
       </div>
       <div className="flex justify-between text-sm text-gray-600">
