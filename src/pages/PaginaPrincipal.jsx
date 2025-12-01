@@ -10,20 +10,30 @@ import Header from '../components/Header';
 import FloatingActionButton from '../components/FloatingActionButton';
 import ProgressBar from '../components/ProgressBar';
 import FixedBottomMenu from '../components/FixedBottomMenu';
+import WeatherPill from '../components/WeatherPill';
 
 // --- CONFIGURAÇÃO DE ÍCONES ---
 
+import caminhaoBemol from '../assets/cami.png';
+
 // Ícone do veículo da simulação
 const iconeVeiculo = new L.Icon({
-  iconUrl: 'https://cdn-icons-png.flaticon.com/512/684/684908.png',
+  iconUrl: caminhaoBemol,
   iconSize: [32, 32],
   iconAnchor: [16, 16],
+});
+
+// Ícone do usuário (substitua pela sua URL ou importação)
+const iconeUsuario = new L.Icon({
+  iconUrl: caminhaoBemol, // Substitua pela URL ou imagem importada
+  iconSize: [120, 120], // Ajuste o tamanho do ícone para melhor precisão
+  iconAnchor: [60, 60], // Centralize o ícone na localização atual
 });
 
 // Correção dos ícones padrão do Leaflet que somem no Vite
 delete L.Icon.Default.prototype._getIconUrl;
 L.Icon.Default.mergeOptions({
-  iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
+  iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon',
   iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
   shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
 });
@@ -32,6 +42,7 @@ L.Icon.Default.mergeOptions({
 const API_URL = 'http://localhost:3001/api/pontos-de-apoio';
 const CENTRO_PADRAO = [-3.1190, -60.0217]; // Manaus (Fallback)
 const PORTO_VELHO = [-8.7619, -63.9039];   // Destino fixo
+
 
 // --- COMPONENTES AUXILIARES ---
 
@@ -95,6 +106,8 @@ function SeguirSimulacao({ posicao }) {
   return null;
 }
 
+
+
 // --- COMPONENTE PRINCIPAL ---
 
 function PaginaPrincipal() {
@@ -106,6 +119,12 @@ function PaginaPrincipal() {
   const [localizacaoUsuario, setLocalizacaoUsuario] = useState(CENTRO_PADRAO);
   const [obtendoLocalizacao, setObtendoLocalizacao] = useState(true);
   const [temPermissaoGps, setTemPermissaoGps] = useState(false);
+  // --- ADICIONE O ESTADO DO CLIMA AQUI ---
+  const [clima, setClima] = useState({ 
+    temp: 31, 
+    condition: 'sun', 
+    isCritical: false 
+  });
 
   // Estados de Simulação
   const [emMovimento, setEmMovimento] = useState(false);
@@ -169,14 +188,39 @@ function PaginaPrincipal() {
       setEmMovimento(true);
       movimentoRef.current = setInterval(() => {
         setIndiceAtual((prev) => {
-          if (prev < rotaCoordenadas.length - 1) return prev + 1;
+          if (prev < rotaCoordenadas.length - 1) {
+            const nextIndex = prev + 1;
+            const currentPos = rotaCoordenadas[prev];
+            const nextPos = rotaCoordenadas[nextIndex];
+
+            // Interpolação para movimento contínuo
+            const interpolatedPos = [
+              currentPos[0] + (nextPos[0] - currentPos[0]) * 0.05, // Reduzi a velocidade
+              currentPos[1] + (nextPos[1] - currentPos[1]) * 0.05,
+            ];
+
+            setIndiceAtual(nextIndex);
+            return nextIndex;
+          }
           clearInterval(movimentoRef.current);
           setEmMovimento(false);
           return prev;
         });
-      }, 1000);
+      }, 500); // Aumentei o intervalo de tempo
     }
   };
+
+  // (Opcional) Simulação para você ver mudando:
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setClima(prev => ({
+        temp: prev.condition === 'sun' ? 26 : 31,
+        condition: prev.condition === 'sun' ? 'rain' : 'sun',
+        isCritical: prev.condition === 'sun' // Se virar chuva, ativa o alerta crítico
+      }));
+    }, 5000); 
+    return () => clearInterval(timer);
+  }, []);
 
   // Tela de carregamento inicial do GPS
   if (obtendoLocalizacao) {
@@ -192,6 +236,17 @@ function PaginaPrincipal() {
 
     <div className='flex flex-col h-screen relative'>
       <Header />
+
+{/* --- AQUI ENTRA O SEU NOVO COMPONENTE --- */}
+      {/* top-20 garante que ele não fique em cima do Header */}
+      <div className="absolute top-20 right-4 z-[1007]">
+        <WeatherPill 
+          condition={clima.condition} 
+          temp={clima.temp} 
+          isCritical={clima.isCritical} 
+        />
+      </div>
+      {/* ---------------------------------------- */}
       
       {/* Botão de Ação Flutuante */}
       <FloatingActionButton 
@@ -209,13 +264,13 @@ function PaginaPrincipal() {
       {/* Botão de Simulação (Flutuante) */}
       <button 
         onClick={alternarMovimento} 
-        className="absolute top-28  right-4 z-[1000] bg-white p-2 rounded shadow-lg font-bold text-sm hover:bg-gray-100 transition"
+        className="absolute bottom-16 left-4 z-[1000] bg-white p-2 rounded shadow-lg font-bold text-sm hover:bg-gray-100 transition"
         >
         {emMovimento ? "⛔ Parar Simulação" : "▶️ Testar Rota"}
       </button>
 
       {erro && (
-        <div className="absolute top-24 left-4 z-[1000] bg-red-100 text-red-700 p-2 rounded shadow-lg">
+        <div className="absolute top-24 left-4 right-4 z-1000 bg-red-100 text-red-700 p-2 rounded shadow-lg max-w-full">
           {erro}
         </div>
       )}
@@ -254,7 +309,7 @@ function PaginaPrincipal() {
         
         {/* Marcador do Usuário */}
         {temPermissaoGps && (
-          <Marker position={localizacaoUsuario}>
+          <Marker position={localizacaoUsuario} icon={iconeUsuario}>
             <Popup>
               <strong>Sua Localização Atual</strong><br/>
               Atualizada em tempo real.
