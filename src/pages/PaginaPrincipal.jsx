@@ -26,8 +26,8 @@ const iconeVeiculo = new L.Icon({
 // Ícone do usuário (substitua pela sua URL ou importação)
 const iconeUsuario = new L.Icon({
   iconUrl: caminhaoBemol, // Substitua pela URL ou imagem importada
-  iconSize: [120, 120], // Ajuste o tamanho do ícone para melhor precisão
-  iconAnchor: [60, 60], // Centralize o ícone na localização atual
+  iconSize: [80, 80], // Ajuste o tamanho do ícone para melhor precisão
+  iconAnchor: [40, 40], // Centralize o ícone na localização atual
 });
 
 // Correção dos ícones padrão do Leaflet que somem no Vite
@@ -270,7 +270,7 @@ function PaginaPrincipal() {
       </button>
 
       {erro && (
-        <div className="absolute top-24 left-4 right-4 z-1000 bg-red-100 text-red-700 p-2 rounded shadow-lg max-w-full">
+        <div className="absolute top-24 left-4 z-[1000] bg-red-100 text-red-700 p-2 rounded shadow-lg">
           {erro}
         </div>
       )}
