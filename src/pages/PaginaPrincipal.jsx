@@ -18,6 +18,8 @@ import ProgressBar from '../components/ProgressBar';
 import FixedBottomMenu from '../components/FixedBottomMenu';
 import WeatherPill from '../components/WeatherPill';
 import UserCount from '../components/UserCount'; // [NOVO] Importando o contador
+import RotaBR319 from '../components/RotaBR319';
+import { calculatePointAhead } from '../utils/calculatePointAhead';
 
 // --- CONFIGURAÇÃO DE ÍCONES ---
 import caminhaoBemol from '../assets/cami.png';
@@ -54,54 +56,14 @@ L.Icon.Default.mergeOptions({
 });
 
 // --- CONSTANTES ---
-const API_URL = 'https://10.21.17.150/api/pontos-de-apoio';
-const SOCKET_URL = 'https://10.21.17.150:3001'; // URL do seu Backend
+const API_URL = 'https://localhost:3001/api/pontos-de-apoio';
+const SOCKET_URL = 'wss://localhost:3001'; // URL do seu Backend
 const CENTRO_PADRAO = [-3.1190, -60.0217]; // Manaus (Fallback)
 const PORTO_VELHO = [-8.7619, -63.9039];   // Destino fixo
 
 
 // --- COMPONENTES AUXILIARES ---
 
-// 1. Componente que calcula e desenha a rota
-function RotaBR319({ origem, destino }) {
-  const map = useMap();
-  const routingControlRef = useRef(null);
-
-  useEffect(() => {
-    if (!origem || !destino) return;
-
-    // Remove rota anterior para não duplicar ao se mover
-    if (routingControlRef.current) {
-      map.removeControl(routingControlRef.current);
-    }
-
-    // Cria a nova rota
-    routingControlRef.current = L.Routing.control({
-      waypoints: [
-        L.latLng(origem[0], origem[1]),
-        L.latLng(destino[0], destino[1])
-      ],
-      routeWhileDragging: false,
-      show: false, // Esconde o painel de texto
-      addWaypoints: false, 
-      fitSelectedRoutes: false, 
-      lineOptions: {
-        styles: [{ color: '#FF4500', weight: 5, opacity: 0.8 }] // Laranja BR-319
-      },
-      createMarker: function() { return null; } 
-    }).addTo(map);
-
-    return () => {
-      if (routingControlRef.current) {
-        map.removeControl(routingControlRef.current);
-      }
-    };
-  }, [map, origem, destino]);
-
-  return null;
-}
-
-// 2. Componente para manter o mapa focado no usuário
 function SeguirUsuario({ posicao }) {
   const map = useMap();
   useEffect(() => {
@@ -135,11 +97,7 @@ function PaginaPrincipal() {
   const [temPermissaoGps, setTemPermissaoGps] = useState(false);
   
   // Estado do Clima
-  const [clima, setClima] = useState({ 
-    temp: 31, 
-    condition: 'sun', 
-    isCritical: false 
-  });
+  const [clima, setClima] = useState({}); // Inicializa vazio
 
   // Estados de Simulação
   const [emMovimento, setEmMovimento] = useState(false);
@@ -150,16 +108,40 @@ function PaginaPrincipal() {
   const socketRef = useRef(null); 
   const [outrosVeiculos, setOutrosVeiculos] = useState({});
 
-  // -----------------------------------------------------------
-  // 1. [WEBSOCKET] Inicialização e Listeners
-  // -----------------------------------------------------------
+  // Gera ou recupera o token persistente do usuário
   useEffect(() => {
-    // Conecta ao servidor
-    socketRef.current = io(SOCKET_URL);
+    let userToken = localStorage.getItem('userToken');
+    if (!userToken) {
+      userToken = `user_${Date.now()}`; // Gera um token único
+      localStorage.setItem('userToken', userToken);
+    }
+    console.log('Token do usuário:', userToken);
+  }, []);
 
-    // Listener: Conexão estabelecida
+  // Conecta ao servidor com o token do usuário
+  useEffect(() => {
+    const userToken = localStorage.getItem('userToken');
+
+    // Adiciona logs para depuração
+    console.log('Tentando conectar ao WebSocket com token:', userToken);
+
+    socketRef.current = io(SOCKET_URL, {
+      query: { userToken },
+      transports: ['websocket'], // Força o transporte WebSocket
+      reconnectionAttempts: 5, // Tenta reconectar até 5 vezes
+      reconnectionDelay: 2000, // Intervalo entre tentativas
+    });
+
     socketRef.current.on('connect', () => {
       console.log('✅ Conectado ao WebSocket:', socketRef.current.id);
+    });
+
+    socketRef.current.on('connect_error', (error) => {
+      console.error('Erro ao conectar ao WebSocket:', error);
+    });
+
+    socketRef.current.on('disconnect', () => {
+      console.warn('WebSocket desconectado.');
     });
 
     // Listener: Recebe posição de outro veículo
@@ -184,7 +166,12 @@ function PaginaPrincipal() {
         alert(`⚠️ ALERTA NA PISTA: ${dados.tipo}`);
     });
 
-    // Cleanup ao desmontar
+    // Listener: Atualização do clima
+    socketRef.current.on('atualizacao_clima', (dados) => {
+      console.log('Dados do clima recebidos:', dados);
+      setClima(dados);
+    });
+
     return () => {
       if (socketRef.current) socketRef.current.disconnect();
     };
@@ -305,6 +292,26 @@ function PaginaPrincipal() {
     return () => clearInterval(timer);
   }, []);
 
+  // Efeito para buscar clima a 20km de distância
+  useEffect(() => {
+    if (emMovimento && rotaCoordenadas.length > 0) {
+      const ponto20km = calculatePointAhead(rotaCoordenadas, 20000); // Calcula o ponto a 20 km
+
+      // Faz uma requisição ao backend para obter o clima do ponto
+      axios
+        .get(`${API_URL}/clima`, {
+          params: { lat: ponto20km[0], lng: ponto20km[1] },
+        })
+        .then((res) => {
+          console.log('Clima previsto para 20 km à frente:', res.data);
+          setClima(res.data);
+        })
+        .catch((err) => {
+          console.error('Erro ao buscar clima para 20 km à frente:', err);
+        });
+    }
+  }, [emMovimento, rotaCoordenadas]);
+
   // Tela de Carregamento
   if (obtendoLocalizacao) {
     return (
@@ -321,10 +328,12 @@ function PaginaPrincipal() {
 
       {/* --- Canto Superior DIREITO: Clima --- */}
       <div className="absolute top-20 right-4 z-[1007]">
-        <WeatherPill 
-          condition={clima.condition} 
-          temp={clima.temp} 
-          isCritical={clima.isCritical} 
+        {/* Renderiza a pílula do clima com os dados dinâmicos */}
+        <WeatherPill
+          condition={clima.condition}
+          temp={clima.temp}
+          isCritical={clima.isCritical}
+          mensagem={clima.mensagem}
         />
       </div>
 
@@ -370,6 +379,7 @@ function PaginaPrincipal() {
         {/* --- ROTA E SEGUIR USUÁRIO --- */}
         {temPermissaoGps && (
           <>
+            {/* Renderiza a rota BR-319 */}
             <RotaBR319 origem={localizacaoUsuario} destino={PORTO_VELHO} />
             {!emMovimento && <SeguirUsuario posicao={localizacaoUsuario} />}
           </>

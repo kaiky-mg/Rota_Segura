@@ -29,7 +29,7 @@ function UserCount({ socket }) {
   }, [socket]); // Recria o listener apenas se a instância do socket mudar
 
   return (
-    <div className="bg-white/90 backdrop-blur-sm p-3 rounded-lg shadow-lg border border-gray-200 flex items-center gap-2">
+    <div className="bg-white/90 mt-3  backdrop-blur-sm p-3 rounded-lg shadow-lg border border-gray-200 flex items-center gap-2">
       <div className={`w-3 h-3 rounded-full ${userCount > 0 ? 'bg-green-500 animate-pulse' : 'bg-gray-400'}`}></div>
       <div className="flex flex-col">
         <span className="text-xs text-gray-500 font-semibold uppercase tracking-wider">Online</span>
