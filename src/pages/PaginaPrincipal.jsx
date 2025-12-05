@@ -6,32 +6,59 @@ import '../App.css';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import L, { icon } from 'leaflet';
 import 'leaflet-routing-machine'; // Importa a lógica da máquina de rota
+
+// --- [WEBSOCKET] Biblioteca ---
+// Certifique-se de ter rodado: npm install socket.io-client
+import { io } from 'socket.io-client';
+
+// --- IMPORTAÇÕES DE COMPONENTES ---
 import Header from '../components/Header';
 import FloatingActionButton from '../components/FloatingActionButton';
 import ProgressBar from '../components/ProgressBar';
 import FixedBottomMenu from '../components/FixedBottomMenu';
+import WeatherPill from '../components/WeatherPill';
+import UserCount from '../components/UserCount'; // [NOVO] Importando o contador
 
 // --- CONFIGURAÇÃO DE ÍCONES ---
+import caminhaoBemol from '../assets/cami.png';
 
 // Ícone do veículo da simulação
 const iconeVeiculo = new L.Icon({
-  iconUrl: 'https://cdn-icons-png.flaticon.com/512/684/684908.png',
+  iconUrl: caminhaoBemol,
   iconSize: [32, 32],
   iconAnchor: [16, 16],
+});
+
+// Ícone do usuário
+const iconeUsuario = new L.Icon({
+  iconUrl: caminhaoBemol, 
+  iconSize: [80, 80], 
+  iconAnchor: [40, 40], 
+});
+
+// --- [WEBSOCKET] Ícone para Outros Motoristas ---
+const iconeOutroMotorista = new L.Icon({
+  iconUrl: caminhaoBemol,
+  iconSize: [40, 40],
+  iconAnchor: [20, 20],
+  popupAnchor: [0, -20],
+  className: 'opacity-80' // Classe CSS/Tailwind para diferenciar levemente
 });
 
 // Correção dos ícones padrão do Leaflet que somem no Vite
 delete L.Icon.Default.prototype._getIconUrl;
 L.Icon.Default.mergeOptions({
-  iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
+  iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
   iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
   shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
 });
 
 // --- CONSTANTES ---
-const API_URL = 'http://localhost:3001/api/pontos-de-apoio';
+const API_URL = 'https://10.21.17.150/api/pontos-de-apoio';
+const SOCKET_URL = 'https://10.21.17.150:3001'; // URL do seu Backend
 const CENTRO_PADRAO = [-3.1190, -60.0217]; // Manaus (Fallback)
 const PORTO_VELHO = [-8.7619, -63.9039];   // Destino fixo
+
 
 // --- COMPONENTES AUXILIARES ---
 
@@ -55,13 +82,12 @@ function RotaBR319({ origem, destino }) {
         L.latLng(destino[0], destino[1])
       ],
       routeWhileDragging: false,
-      show: false, // Esconde o painel de texto (Vire a direita...)
-      addWaypoints: false, // Impede o usuário de alterar a rota manualmente
-      fitSelectedRoutes: false, // Impede o zoom automático chato
+      show: false, // Esconde o painel de texto
+      addWaypoints: false, 
+      fitSelectedRoutes: false, 
       lineOptions: {
         styles: [{ color: '#FF4500', weight: 5, opacity: 0.8 }] // Laranja BR-319
       },
-      // Remove os marcadores padrões "A" e "B" da rota (usaremos os nossos)
       createMarker: function() { return null; } 
     }).addTo(map);
 
@@ -70,7 +96,7 @@ function RotaBR319({ origem, destino }) {
         map.removeControl(routingControlRef.current);
       }
     };
-  }, [map, origem, destino]); // Recalcula sempre que a origem (usuário) muda
+  }, [map, origem, destino]);
 
   return null;
 }
@@ -95,6 +121,7 @@ function SeguirSimulacao({ posicao }) {
   return null;
 }
 
+
 // --- COMPONENTE PRINCIPAL ---
 
 function PaginaPrincipal() {
@@ -106,13 +133,67 @@ function PaginaPrincipal() {
   const [localizacaoUsuario, setLocalizacaoUsuario] = useState(CENTRO_PADRAO);
   const [obtendoLocalizacao, setObtendoLocalizacao] = useState(true);
   const [temPermissaoGps, setTemPermissaoGps] = useState(false);
+  
+  // Estado do Clima
+  const [clima, setClima] = useState({ 
+    temp: 31, 
+    condition: 'sun', 
+    isCritical: false 
+  });
 
   // Estados de Simulação
   const [emMovimento, setEmMovimento] = useState(false);
   const [indiceAtual, setIndiceAtual] = useState(0);
   const movimentoRef = useRef(null);
 
-  // 1. GEOLOCALIZAÇÃO EM TEMPO REAL (WatchPosition)
+  // --- [WEBSOCKET] Estados ---
+  const socketRef = useRef(null); 
+  const [outrosVeiculos, setOutrosVeiculos] = useState({});
+
+  // -----------------------------------------------------------
+  // 1. [WEBSOCKET] Inicialização e Listeners
+  // -----------------------------------------------------------
+  useEffect(() => {
+    // Conecta ao servidor
+    socketRef.current = io(SOCKET_URL);
+
+    // Listener: Conexão estabelecida
+    socketRef.current.on('connect', () => {
+      console.log('✅ Conectado ao WebSocket:', socketRef.current.id);
+    });
+
+    // Listener: Recebe posição de outro veículo
+    socketRef.current.on('nova_posicao_veiculo', (dados) => {
+      setOutrosVeiculos((prev) => ({
+        ...prev,
+        [dados.socketId]: dados // Adiciona ou atualiza no objeto
+      }));
+    });
+
+    // Listener: Veículo desconectou
+    socketRef.current.on('veiculo_saiu', (idSocketSaiu) => {
+      setOutrosVeiculos((prev) => {
+        const novaLista = { ...prev };
+        delete novaLista[idSocketSaiu];
+        return novaLista;
+      });
+    });
+
+    // Listener: Alerta de perigo
+    socketRef.current.on('alerta_na_pista', (dados) => {
+        alert(`⚠️ ALERTA NA PISTA: ${dados.tipo}`);
+    });
+
+    // Cleanup ao desmontar
+    return () => {
+      if (socketRef.current) socketRef.current.disconnect();
+    };
+  }, []);
+
+
+  // -----------------------------------------------------------
+  // 2. Geolocalização + Envio para WebSocket
+  // -----------------------------------------------------------
   useEffect(() => {
     let watchId = null;
 
@@ -120,21 +201,30 @@ function PaginaPrincipal() {
       watchId = navigator.geolocation.watchPosition(
         (position) => {
           const { latitude, longitude } = position.coords;
-          console.log("GPS Atualizado:", latitude, longitude);
           
           setLocalizacaoUsuario([latitude, longitude]);
           setTemPermissaoGps(true);
           setObtendoLocalizacao(false);
+
+          // --- [WEBSOCKET] Enviar posição REAL ---
+          // Envia apenas se não estivermos rodando a simulação
+          if (socketRef.current && !emMovimento) {
+            socketRef.current.emit('atualizar_posicao', {
+                lat: latitude,
+                lng: longitude,
+                usuarioId: 'Motorista Real' // Idealmente viria de um AuthContext
+            });
+          }
         },
         (error) => {
           console.error("Erro GPS:", error);
-          setObtendoLocalizacao(false); // Libera o mapa mesmo com erro (usa padrão)
+          setObtendoLocalizacao(false);
         },
         { 
           enableHighAccuracy: true, 
           timeout: 15000, 
           maximumAge: 0,
-          distanceFilter: 10 // Só atualiza se mover 10 metros (Evita "pulos" parado)
+          distanceFilter: 10 
         }
       );
     } else {
@@ -145,9 +235,10 @@ function PaginaPrincipal() {
     return () => {
       if (watchId) navigator.geolocation.clearWatch(watchId);
     };
-  }, []);
+  }, [emMovimento]); 
 
-  // 2. Busca Pontos da API
+
+  // 3. Busca Pontos da API
   useEffect(() => {
     axios.get(API_URL)
       .then(res => setPontos(res.data))
@@ -157,7 +248,9 @@ function PaginaPrincipal() {
       });
   }, []);
 
-  // Lógica da Simulação (Pontos ordenados)
+  // -----------------------------------------------------------
+  // 4. Lógica da Simulação + Envio para WebSocket
+  // -----------------------------------------------------------
   const pontosOrdenados = [...pontos].sort((a, b) => b.latitude - a.latitude);
   const rotaCoordenadas = pontosOrdenados.map(p => [p.latitude, p.longitude]);
 
@@ -169,16 +262,50 @@ function PaginaPrincipal() {
       setEmMovimento(true);
       movimentoRef.current = setInterval(() => {
         setIndiceAtual((prev) => {
-          if (prev < rotaCoordenadas.length - 1) return prev + 1;
+          if (prev < rotaCoordenadas.length - 1) {
+            const nextIndex = prev + 1;
+            const currentPos = rotaCoordenadas[prev];
+            const nextPos = rotaCoordenadas[nextIndex];
+
+            // Interpolação simples
+            const interpolatedPos = [
+              currentPos[0] + (nextPos[0] - currentPos[0]) * 0.05,
+              currentPos[1] + (nextPos[1] - currentPos[1]) * 0.05,
+            ];
+            
+            // --- [WEBSOCKET] Enviar posição SIMULADA ---
+            if (socketRef.current) {
+                socketRef.current.emit('atualizar_posicao', {
+                    lat: interpolatedPos[0],
+                    lng: interpolatedPos[1],
+                    usuarioId: 'Simulação'
+                });
+            }
+
+            setIndiceAtual(nextIndex);
+            return nextIndex;
+          }
           clearInterval(movimentoRef.current);
           setEmMovimento(false);
           return prev;
         });
-      }, 1000);
+      }, 500);
     }
   };
 
-  // Tela de carregamento inicial do GPS
+  // Efeito do Clima (Opcional)
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setClima(prev => ({
+        temp: prev.condition === 'sun' ? 26 : 31,
+        condition: prev.condition === 'sun' ? 'rain' : 'sun',
+        isCritical: prev.condition === 'sun'
+      }));
+    }, 5000); 
+    return () => clearInterval(timer);
+  }, []);
+
+  // Tela de Carregamento
   if (obtendoLocalizacao) {
     return (
       <div className="flex items-center justify-center h-screen bg-gray-100 flex-col">
@@ -189,33 +316,43 @@ function PaginaPrincipal() {
   }
 
   return (
-
     <div className='flex flex-col h-screen relative'>
       <Header />
+
+      {/* --- Canto Superior DIREITO: Clima --- */}
+      <div className="absolute top-20 right-4 z-[1007]">
+        <WeatherPill 
+          condition={clima.condition} 
+          temp={clima.temp} 
+          isCritical={clima.isCritical} 
+        />
+      </div>
+
+      {/* --- [NOVO] Canto Superior ESQUERDO: UserCount --- */}
+      {/* Posicionado espelhado ao WeatherPill (top-20 left-4) */}
+      <div className="absolute top-20 left-4 z-[1007]">
+        <UserCount socket={socketRef.current} />
+      </div>
       
-      {/* Botão de Ação Flutuante */}
       <FloatingActionButton 
         onClick={alternarMovimento} 
         icon="➕" 
         label="Ação"
       />
 
-      {/* Barra de Progresso */}
       <ProgressBar progress={(indiceAtual / rotaCoordenadas.length) * 100} />
 
-      {/* Menu Fixo na Parte Inferior */}
       <FixedBottomMenu onMenuClick={(menu) => console.log(`Menu clicado: ${menu}`)} />
 
-      {/* Botão de Simulação (Flutuante) */}
       <button 
         onClick={alternarMovimento} 
-        className="absolute top-28  right-4 z-[1000] bg-white p-2 rounded shadow-lg font-bold text-sm hover:bg-gray-100 transition"
-        >
+        className="absolute bottom-16 left-4 z-[1000] bg-white p-2 rounded shadow-lg font-bold text-sm hover:bg-gray-100 transition"
+      >
         {emMovimento ? "⛔ Parar Simulação" : "▶️ Testar Rota"}
       </button>
 
       {erro && (
-        <div className="absolute top-24 left-4 z-[1000] bg-red-100 text-red-700 p-2 rounded shadow-lg">
+        <div className="absolute top-36 left-4 z-[1000] bg-red-100 text-red-700 p-2 rounded shadow-lg">
           {erro}
         </div>
       )}
@@ -224,23 +361,21 @@ function PaginaPrincipal() {
         center={localizacaoUsuario} 
         zoom={12} 
         className="w-full h-full flex-grow z-0"
-        >
+      >
         <TileLayer
           attribution='&copy; OpenStreetMap contributors'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-          />
+        />
 
-        {/* --- LÓGICA DE ROTA --- */}
-        {/* Se tiver GPS, traça rota da posição atual até Porto Velho */}
+        {/* --- ROTA E SEGUIR USUÁRIO --- */}
         {temPermissaoGps && (
           <>
-                <RotaBR319 origem={localizacaoUsuario} destino={PORTO_VELHO} />
-                {/* Segue o usuário se a simulação NÃO estiver rodando */}
-                {!emMovimento && <SeguirUsuario posicao={localizacaoUsuario} />}
-            </>
+            <RotaBR319 origem={localizacaoUsuario} destino={PORTO_VELHO} />
+            {!emMovimento && <SeguirUsuario posicao={localizacaoUsuario} />}
+          </>
         )}
 
-        {/* --- LÓGICA DE SIMULAÇÃO --- */}
+        {/* --- VISUALIZAÇÃO DA SIMULAÇÃO --- */}
         {emMovimento && rotaCoordenadas.length > 0 && (
           <>
             <SeguirSimulacao posicao={rotaCoordenadas[indiceAtual]} />
@@ -250,11 +385,23 @@ function PaginaPrincipal() {
           </>
         )}
 
-        {/* --- MARCADORES --- */}
-        
-        {/* Marcador do Usuário */}
+        {/* --- [WEBSOCKET] OUTROS MOTORISTAS --- */}
+        {Object.values(outrosVeiculos).map((motorista) => (
+            <Marker 
+                key={motorista.socketId}
+                position={[motorista.lat, motorista.lng]}
+                icon={iconeOutroMotorista}
+            >
+                <Popup>
+                    <strong>Motorista na Pista</strong><br/>
+                    ID: {motorista.usuarioId || "Desconhecido"}
+                </Popup>
+            </Marker>
+        ))}
+
+        {/* --- MARCADORES PADRÃO --- */}
         {temPermissaoGps && (
-          <Marker position={localizacaoUsuario}>
+          <Marker position={localizacaoUsuario} icon={iconeUsuario}>
             <Popup>
               <strong>Sua Localização Atual</strong><br/>
               Atualizada em tempo real.
@@ -262,12 +409,10 @@ function PaginaPrincipal() {
           </Marker>
         )}
 
-        {/* Marcador do Destino (Porto Velho) */}
         <Marker position={PORTO_VELHO}>
              <Popup>Chegada: Porto Velho</Popup>
         </Marker>
 
-        {/* Pontos de Apoio da API */}
         {pontos.map((ponto) => (
           <Marker key={ponto.id} position={[ponto.latitude, ponto.longitude]}>
             <Popup>
@@ -280,7 +425,6 @@ function PaginaPrincipal() {
 
       </MapContainer>
     </div>
-        
   );
 }
 
