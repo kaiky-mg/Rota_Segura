@@ -1,8 +1,8 @@
 import React from 'react';
-import PaginaPrincipal from './pages/PaginaPrincipal';
+import AppRoutes from './AppRoutes';
 
 function App() {
-  return <PaginaPrincipal />;
+  return <AppRoutes />;
 }
 
 export default App;

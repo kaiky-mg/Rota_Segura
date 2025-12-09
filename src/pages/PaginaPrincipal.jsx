@@ -6,6 +6,7 @@ import '../App.css';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import L, { icon } from 'leaflet';
 import 'leaflet-routing-machine'; // Importa a lógica da máquina de rota
+import { useNavigate } from 'react-router-dom';
 
 // --- [WEBSOCKET] Biblioteca ---
 // Certifique-se de ter rodado: npm install socket.io-client
@@ -57,7 +58,7 @@ L.Icon.Default.mergeOptions({
 
 // --- CONSTANTES ---
 const API_URL = 'https://localhost:3001/api/pontos-de-apoio';
-const SOCKET_URL = 'wss://localhost:3001'; // URL do seu Backend
+const SOCKET_URL = 'https://localhost:3001'; // URL do seu Backend
 const CENTRO_PADRAO = [-3.1190, -60.0217]; // Manaus (Fallback)
 const PORTO_VELHO = [-8.7619, -63.9039];   // Destino fixo
 
@@ -103,10 +104,16 @@ function PaginaPrincipal() {
   const [emMovimento, setEmMovimento] = useState(false);
   const [indiceAtual, setIndiceAtual] = useState(0);
   const movimentoRef = useRef(null);
+  const [modalVisible, setModalVisible] = useState(false);
+  const [modalFimTrajeto, setModalFimTrajeto] = useState(false); // [NOVO] Estado para o modal de fim de trajeto
+  const navigate = useNavigate();
 
   // --- [WEBSOCKET] Estados ---
   const socketRef = useRef(null); 
   const [outrosVeiculos, setOutrosVeiculos] = useState({});
+
+  // Estado para controle de trajeto
+  const [trajetoEscolhido, setTrajetoEscolhido] = useState(null);
 
   // Gera ou recupera o token persistente do usuário
   useEffect(() => {
@@ -192,6 +199,7 @@ function PaginaPrincipal() {
           setLocalizacaoUsuario([latitude, longitude]);
           setTemPermissaoGps(true);
           setObtendoLocalizacao(false);
+            console.log('Coordenada atual:', latitude, longitude);
 
           // --- [WEBSOCKET] Enviar posição REAL ---
           // Envia apenas se não estivermos rodando a simulação
@@ -274,9 +282,34 @@ function PaginaPrincipal() {
           }
           clearInterval(movimentoRef.current);
           setEmMovimento(false);
+          setModalFimTrajeto(true); // [NOVO] Abre o modal de fim de trajeto
           return prev;
         });
       }, 500);
+    }
+  };
+
+  // Função para iniciar trajeto
+  const iniciarTrajeto = () => {
+    setModalVisible(true);
+  };
+
+  const confirmarInicio = (tipo) => {
+    if (tipo === 'ida') {
+      setIndiceAtual(0);
+      setEmMovimento(true);
+      setModalVisible(false);
+    } else {
+      alert('Por enquanto só está disponível a rota de ida para Porto Velho.');
+      setModalVisible(false);
+    }
+  };
+
+  // Função para finalizar trajeto
+  const finalizarTrajeto = () => {
+    if (window.confirm('Deseja finalizar o trajeto?')) {
+      setEmMovimento(false);
+      setIndiceAtual(0);
     }
   };
 
@@ -322,6 +355,13 @@ function PaginaPrincipal() {
     );
   }
 
+  const sentidoRota = localStorage.getItem('sentidoRota');
+  if (!sentidoRota) {
+    // Se não houver sentido definido, redireciona para a escolha
+    window.location.href = '/';
+    return null;
+  }
+
   return (
     <div className='flex flex-col h-screen relative'>
       <Header />
@@ -349,7 +389,8 @@ function PaginaPrincipal() {
         label="Ação"
       />
 
-      <ProgressBar progress={(indiceAtual / rotaCoordenadas.length) * 100} />
+      <ProgressBar 
+      progress={(rotaCoordenadas.length > 1 ? Math.min((indiceAtual / (rotaCoordenadas.length - 1)) * 100) : 0)} />
 
       <FixedBottomMenu onMenuClick={(menu) => console.log(`Menu clicado: ${menu}`)} />
 
@@ -363,6 +404,23 @@ function PaginaPrincipal() {
       {erro && (
         <div className="absolute top-36 left-4 z-[1000] bg-red-100 text-red-700 p-2 rounded shadow-lg">
           {erro}
+        </div>
+      )}
+
+      {/* --- [NOVO] Modal de Fim de Trajeto --- */}
+      {modalFimTrajeto && (
+        <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999 }}>
+          <div style={{ background: '#fff', padding: 32, borderRadius: 8, boxShadow: '0 2px 8px rgba(0,0,0,0.2)' }}>
+            <h2>Trajeto finalizado!</h2>
+            <p>Você chegou ao destino final (Porto Velho).</p>
+            <button style={{ marginTop: 24, padding: '8px 16px', background: '#1976d2', color: '#fff', border: 'none', borderRadius: 4, cursor: 'pointer' }} onClick={() => {
+              setModalFimTrajeto(false);
+              localStorage.removeItem('sentidoRota');
+              navigate('/');
+            }}>
+              OK
+            </button>
+          </div>
         </div>
       )}
 
