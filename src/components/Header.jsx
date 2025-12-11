@@ -1,5 +1,5 @@
 import React from 'react';
-import Bemol from '../assets/Marca_Bemol.svg';
+import Bemol from '../assets/MARCA_BEMOL.svg';
 
 function Header() {
   return (

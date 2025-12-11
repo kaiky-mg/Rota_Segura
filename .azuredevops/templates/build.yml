@@ -1,0 +1,51 @@
+parameters:
+- name: tag
+- name: dockerRegistryServiceConnection
+- name: imageRepository
+- name: bicep
+- name: resourceGroup
+- name: bicepparams
+
+steps:
+- task: AzureCLI@2
+  inputs:
+    azureSubscription: ${{parameters.resourceGroup}}
+    scriptType: 'pscore'
+    scriptLocation: 'inlineScript'
+    inlineScript: 'az deployment group create --resource-group ${{parameters.resourceGroup}} --template-file "$(System.DefaultWorkingDirectory)/.azuredevops/${{parameters.bicep}}" --parameters ./.azuredevops/bicep-params/${{parameters.bicepparams}} --parameters dockerImage=$(Build.buildId) --parameters dockerRepos=${{parameters.imageRepository}}'
+
+# - task: replacetokens@3
+#   displayName: Replace env vars
+#   inputs:
+#     targetFiles: '$(envtargetFile)'
+#     encoding: 'auto'
+#     writeBOM: true
+#     actionOnMissing: 'fail'
+#     keepToken: false
+#     tokenPrefix: '$_'
+#     tokenSuffix: '_$'
+#     useLegacyPattern: false
+#     enableTransforms: false
+#     enableTelemetry: true
+
+- task: NodeTool@0
+  inputs:
+    versionSource: 'spec'
+    versionSpec: '20.x'
+    checkLatest: true
+    
+- task: Npm@1
+  displayName: "Npm CI"
+  inputs:
+    command: 'ci'
+    workingDir: '$(Build.SourcesDirectory)'
+
+- task: Docker@2
+  displayName: Build and push an image to container registry
+  inputs:
+    command: buildAndPush
+    repository: '${{parameters.imageRepository}}'
+    dockerfile: $(dockerfilePath)
+    containerRegistry: ${{parameters.dockerRegistryServiceConnection}}
+    tags: |
+      ${{parameters.tag}}
