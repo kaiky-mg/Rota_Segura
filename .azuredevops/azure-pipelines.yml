@@ -12,7 +12,7 @@ variables:
   tag: $(Build.BuildId)
   vmImageName: ubuntu-latest
   dockerfilePath: $(Build.SourcesDirectory)/Dockerfile
-  # URL do Backend definida como variável para facilitar a manutenção
+  # Defina aqui a URL que o Frontend deve usar
   VITE_API_URL: 'https://rotasegura-back-qas.azurewebsites.net'
 
 pool:
@@ -43,16 +43,10 @@ stages:
         displayName: Build
         condition: eq(variables['Build.SourceBranch'], 'refs/heads/dev')
         steps:
-          # Passo 1: Criar o arquivo .env com a URL correta
-          - script: |
-              echo "VITE_API_URL=$(VITE_API_URL)" > .env
-              echo "Arquivo .env criado com sucesso para o build."
-            displayName: 'Gerar arquivo .env'
-
-          # Passo 2: Rodar o template de build (que vai disparar o Docker)
           - template: templates/build.yml
             parameters:
               tag: $(tag)
+              apiUrl: $(VITE_API_URL) # Passa a URL para o template
               bicep: main.bicep
               bicepparams: params-qas.json
               resourceGroup: RGROTASEGURAMVPQAS
