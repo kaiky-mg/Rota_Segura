@@ -1,18 +1,23 @@
 trigger:
   - main
   - dev
+
 resources:
   repositories:
     - repository: owaspZap
       type: git
       name: Infraestrutura/owaspZap
+
 variables:
   tag: $(Build.BuildId)
   vmImageName: ubuntu-latest
   dockerfilePath: $(Build.SourcesDirectory)/Dockerfile
-  #envtargetFile: 
+  # URL do Backend definida como variável para facilitar a manutenção
+  VITE_API_URL: 'https://rotasegura-back-qas.azurewebsites.net'
+
 pool:
   vmImage: $(vmImageName)
+
 stages:
   - stage: DevSecOps
     displayName: Analise de Segurança
@@ -23,7 +28,6 @@ stages:
           - name: projectName
             value: $[variables['System.TeamProject']]
           - group: Code_Analysis
-
         pool:
           vmImage: $(vmImageName)
         steps:
@@ -39,6 +43,13 @@ stages:
         displayName: Build
         condition: eq(variables['Build.SourceBranch'], 'refs/heads/dev')
         steps:
+          # Passo 1: Criar o arquivo .env com a URL correta
+          - script: |
+              echo "VITE_API_URL=$(VITE_API_URL)" > .env
+              echo "Arquivo .env criado com sucesso para o build."
+            displayName: 'Gerar arquivo .env'
+
+          # Passo 2: Rodar o template de build (que vai disparar o Docker)
           - template: templates/build.yml
             parameters:
               tag: $(tag)
@@ -47,14 +58,3 @@ stages:
               resourceGroup: RGROTASEGURAMVPQAS
               imageRepository: front-img
               dockerRegistryServiceConnection: acrrotaseguraqas
-
-        # - job: Bulid_PRD
-        #   displayName: Bulid_PRD
-        #   condition: eq(variables['Build.SourceBranch'], 'refs/heads/master')
-        #   steps:
-        #   - template: templates/build.yml
-        #     parameters:
-        #       tag: $(tag)
-        #       bicep: .bicep
-        #       bicepparams: params.json
-        #       resourceGroup: NOMEDORG
