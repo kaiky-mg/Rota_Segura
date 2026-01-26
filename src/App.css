@@ -35,8 +35,54 @@
 .read-the-docs {
   color: #888;
 }
-/* src/App.css ou outro arquivo */
+/* Container que ocupa a tela toda */
+.pagina-container {
+  height: 100vh;
+  width: 100vw;
+  position: relative;
+  overflow: hidden;
+  /* Fundo degradê para simular o céu no horizonte */
+  background: linear-gradient(to bottom, #87CEEB 0%, #e0e0e0 40%);
+}
+
 .custom-map-container {
-  height: 65vh;
+  position: absolute;
+  top: 0;
+  left: 0;
   width: 100%;
+  height: 100%;
+  transition: all 1s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* A "Mágica" do Uber: perspectiva real */
+.mapa-modo-uber {
+  /* perspective: profundidade; rotateX: inclinação; scale: preenche as bordas; translateY: sobe o mapa */
+  transform: perspective(1200px) rotateX(55deg) scale(1.5) translateY(-10%);
+  transform-origin: bottom center;
+}
+
+/* Desinclina os ícones para eles não ficarem "deitados" no chão */
+.mapa-modo-uber .leaflet-marker-icon,
+.mapa-modo-uber .leaflet-popup {
+  transform: rotateX(-55deg) !important;
+  transform-origin: bottom center;
+}
+/* Container que agrupa a barra e o menu na base */
+.bg-white\/95 {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+/* Remove qualquer margem interna da barra de progresso */
+.progress-bar-container {
+  margin: 0 !important;
+  padding: 0 !important;
+  width: 100%;
+}
+
+/* Garante que o menu ocupe o espaço correto abaixo da barra */
+.fixed-bottom-menu {
+  margin-top: 0 !important;
+  padding-top: 10px; /* Ajuste conforme o design do seu menu */
 }

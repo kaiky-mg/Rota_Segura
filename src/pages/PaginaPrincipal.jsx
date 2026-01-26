@@ -1,15 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import 'leaflet/dist/leaflet.css';
-import 'leaflet-routing-machine/dist/leaflet-routing-machine.css';
 import '../App.css';
-import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
-import L from 'leaflet';
-import 'leaflet-routing-machine';
-import { useNavigate } from 'react-router-dom';
 import { io } from 'socket.io-client';
-
-// --- IMPORTAÇÃO DO SERVIÇO CENTRALIZADO ---
-import api from '../services/api';
 
 // --- COMPONENTES ---
 import Header from '../components/Header';
@@ -18,193 +9,105 @@ import ProgressBar from '../components/ProgressBar';
 import FixedBottomMenu from '../components/FixedBottomMenu';
 import WeatherPill from '../components/WeatherPill';
 import UserCount from '../components/UserCount';
-import RotaBR319 from '../components/RotaBR319';
-import { calculatePointAhead } from '../utils/calculatePointAhead';
-import caminhaoBemol from '../assets/cami.png';
+import MapaRotaSegura from '../components/MapaRotaSegura';
 
-// --- CONSTANTES DE AMBIENTE E NEGÓCIO ---
+// --- CONSTANTES ---
 const SOCKET_URL = import.meta.env.VITE_API_URL;
-const ENDPOINTS = {
-  PONTOS: '/api/pontos-de-apoio',
-  CLIMA: '/api/pontos-de-apoio/clima'
-};
-const CENTRO_PADRAO = [-3.1190, -60.0217]; 
 const PORTO_VELHO = [-8.7619, -63.9039];
-
-// --- CONFIGURAÇÃO DE ÍCONES ---
-const iconeVeiculo = new L.Icon({ iconUrl: caminhaoBemol, iconSize: [32, 32], iconAnchor: [16, 16] });
-const iconeUsuario = new L.Icon({ iconUrl: caminhaoBemol, iconSize: [80, 80], iconAnchor: [40, 40] });
-const iconeOutroMotorista = new L.Icon({
-  iconUrl: caminhaoBemol,
-  iconSize: [40, 40],
-  iconAnchor: [20, 20],
-  popupAnchor: [0, -20],
-  className: 'opacity-80'
-});
-
-// Componentes Auxiliares de Mapa
-function SeguirUsuario({ posicao }) {
-  const map = useMap();
-  useEffect(() => { if (posicao) map.flyTo(posicao, map.getZoom(), { animate: true, duration: 1 }); }, [posicao, map]);
-  return null;
-}
-
-function SeguirSimulacao({ posicao }) {
-  const map = useMap();
-  useEffect(() => { if (posicao) map.setView(posicao); }, [posicao, map]);
-  return null;
-}
+const MANAUS = [-3.1190, -60.0217];
 
 function PaginaPrincipal() {
-  const [pontos, setPontos] = useState([]);
-  const [erro, setErro] = useState(null);
-  const [localizacaoUsuario, setLocalizacaoUsuario] = useState(CENTRO_PADRAO);
-  const [obtendoLocalizacao, setObtendoLocalizacao] = useState(true);
-  const [temPermissaoGps, setTemPermissaoGps] = useState(false);
-  const [clima, setClima] = useState({});
-  const [emMovimento, setEmMovimento] = useState(false);
-  const [indiceAtual, setIndiceAtual] = useState(0);
+  const [localizacaoUsuario, setLocalizacaoUsuario] = useState(null);
+  const [isNavegando, setIsNavegando] = useState(false);
   const [outrosVeiculos, setOutrosVeiculos] = useState({});
-  const [modalFimTrajeto, setModalFimTrajeto] = useState(false);
-  
-  const movimentoRef = useRef(null);
+  const [pontos, setPontos] = useState([]);
   const socketRef = useRef(null);
-  const navigate = useNavigate();
 
-  // 1. WebSocket Setup
-  useEffect(() => {
-    let userToken = localStorage.getItem('userToken') || `user_${Date.now()}`;
-    localStorage.setItem('userToken', userToken);
+  // Cálculo de distância (Fórmula de Haversine) para evitar erro do 'geolib'
+  const calcularProgressoReal = () => {
+    if (!localizacaoUsuario) return 0;
+    
+    const toRad = (value) => (value * Math.PI) / 180;
+    const R = 6371; // Raio da Terra em km
 
-    socketRef.current = io(SOCKET_URL, {
-      query: { userToken },
-      transports: ['websocket'],
-    });
+    const dLat = toRad(PORTO_VELHO[0] - localizacaoUsuario[0]);
+    const dLon = toRad(PORTO_VELHO[1] - localizacaoUsuario[1]);
 
-    socketRef.current.on('connect', () => console.log('✅ WebSocket Conectado'));
-    socketRef.current.on('nova_posicao_veiculo', (dados) => {
-      setOutrosVeiculos(prev => ({ ...prev, [dados.socketId]: dados }));
-    });
-    socketRef.current.on('veiculo_saiu', (id) => {
-      setOutrosVeiculos(prev => { const n = { ...prev }; delete n[id]; return n; });
-    });
-    socketRef.current.on('alerta_na_pista', (d) => alert(`⚠️ ALERTA: ${d.tipo}`));
-    socketRef.current.on('atualizacao_clima', (d) => setClima(d));
+    const a = 
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos(toRad(localizacaoUsuario[0])) * Math.cos(toRad(PORTO_VELHO[0])) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    const distanciaRestante = R * c;
+    const distanciaTotal = 870; // Extensão aproximada da BR-319
 
-    return () => socketRef.current?.disconnect();
-  }, []);
-
-  // 2. Geolocalização
-  useEffect(() => {
-    let watchId = navigator.geolocation.watchPosition(
-      (pos) => {
-        const { latitude, longitude } = pos.coords;
-        setLocalizacaoUsuario([latitude, longitude]);
-        setTemPermissaoGps(true);
-        setObtendoLocalizacao(false);
-
-        if (socketRef.current && !emMovimento) {
-          socketRef.current.emit('atualizar_posicao', { lat: latitude, lng: longitude, usuarioId: 'Motorista Real' });
-        }
-      },
-      () => setObtendoLocalizacao(false),
-      { enableHighAccuracy: true }
-    );
-    return () => navigator.geolocation.clearWatch(watchId);
-  }, [emMovimento]);
-
-  // 3. Chamada de API: Buscar Pontos de Apoio
-  useEffect(() => {
-    api.get(ENDPOINTS.PONTOS)
-      .then(res => setPontos(res.data))
-      .catch(() => setErro("Não foi possível carregar os pontos de apoio."));
-  }, []);
-
-  // 4. Lógica de Simulação
-  const pontosOrdenados = [...pontos].sort((a, b) => b.latitude - a.latitude);
-  const rotaCoordenadas = pontosOrdenados.map(p => [p.latitude, p.longitude]);
-
-  const alternarMovimento = () => {
-    if (emMovimento) {
-      clearInterval(movimentoRef.current);
-      setEmMovimento(false);
-    } else {
-      setEmMovimento(true);
-      movimentoRef.current = setInterval(() => {
-        setIndiceAtual((prev) => {
-          if (prev < rotaCoordenadas.length - 1) {
-            const nextIndex = prev + 1;
-            const pos = rotaCoordenadas[nextIndex];
-            socketRef.current?.emit('atualizar_posicao', { lat: pos[0], lng: pos[1], usuarioId: 'Simulação' });
-            return nextIndex;
-          }
-          clearInterval(movimentoRef.current);
-          setEmMovimento(false);
-          setModalFimTrajeto(true);
-          return prev;
-        });
-      }, 1000);
-    }
+    const progresso = ((distanciaTotal - distanciaRestante) / distanciaTotal) * 100;
+    return Math.max(0, Math.min(100, progresso)).toFixed(0);
   };
 
-  // 5. Chamada de API: Clima 20km à frente
   useEffect(() => {
-    if (emMovimento && rotaCoordenadas.length > 0) {
-      const ponto20km = calculatePointAhead(rotaCoordenadas, 20000);
-      api.get(ENDPOINTS.CLIMA, { params: { lat: ponto20km[0], lng: ponto20km[1] } })
-        .then(res => setClima(res.data))
-        .catch(err => console.error('Erro clima:', err));
-    }
-  }, [indiceAtual, emMovimento]);
+    // Configuração do Socket
+    socketRef.current = io(SOCKET_URL, { transports: ['websocket'] });
 
-  if (obtendoLocalizacao) return <div className="h-screen flex items-center justify-center">Sincronizando satélites...</div>;
+    // Monitorização do GPS real
+    const watchId = navigator.geolocation.watchPosition(
+      (pos) => {
+        const p = [pos.coords.latitude, pos.coords.longitude];
+        setLocalizacaoUsuario(p);
+        socketRef.current.emit('atualizar_posicao', { 
+          lat: p[0], 
+          lng: p[1], 
+          usuarioId: 'Motorista' 
+        });
+      },
+      (err) => console.error(err),
+      { enableHighAccuracy: true }
+    );
+
+    return () => {
+      socketRef.current.disconnect();
+      navigator.geolocation.clearWatch(watchId);
+    };
+  }, []);
 
   return (
-    <div className='flex flex-col h-screen relative'>
-      <Header />
+    <div className="h-screen w-screen relative overflow-hidden bg-slate-900">
       
-      <div className="absolute top-20 right-4 z-[1007]">
-        <WeatherPill {...clima} />
-      </div>
+      {/* 1. MAPA (Fundo) */}
+      <MapaRotaSegura 
+        posicaoAtiva={localizacaoUsuario || MANAUS}
+        destino={PORTO_VELHO}
+        isNavegando={isNavegando}
+        outrosVeiculos={outrosVeiculos}
+        pontos={pontos}
+      />
 
-      <div className="absolute top-20 left-4 z-[1007]">
-        <UserCount socket={socketRef.current} />
-      </div>
-      
-      <FloatingActionButton onClick={alternarMovimento} icon="➕" />
-
-      <ProgressBar progress={(rotaCoordenadas.length > 1 ? (indiceAtual / (rotaCoordenadas.length - 1)) * 100 : 0)} />
-
-      <MapContainer center={localizacaoUsuario} zoom={12} className="custom-map-container">
-        <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+      {/* 2. CAMADA DE UI (Z-Index Superior) */}
+      <div className="absolute inset-0 z-10 pointer-events-none flex flex-col justify-between">
         
-        {temPermissaoGps && (
-          <>
-            <RotaBR319 origem={localizacaoUsuario} destino={PORTO_VELHO} />
-            {!emMovimento && <SeguirUsuario posicao={localizacaoUsuario} />}
-            <Marker position={localizacaoUsuario} icon={iconeUsuario}><Popup>Você está aqui</Popup></Marker>
-          </>
-        )}
+        {/* Topo: Header e Informações */}
+        <div className="pointer-events-auto">
+          <Header />
+          <div className="absolute top-20 right-4 flex flex-col gap-2">
+            <WeatherPill />
+            <UserCount />
+          </div>
+        </div>
 
-        {emMovimento && (
-          <>
-            <SeguirSimulacao posicao={rotaCoordenadas[indiceAtual]} />
-            <Marker position={rotaCoordenadas[indiceAtual]} icon={iconeVeiculo} />
-          </>
-        )}
+        {/* Centro-Direita: Botão de Navegação */}
+        <div className="p-6 pointer-events-auto self-end mb-20">
+          <FloatingActionButton 
+            onClick={() => setIsNavegando(!isNavegando)} 
+            icon={isNavegando ? "🗺️" : "🧭"} 
+          />
+        </div>
 
-        {Object.values(outrosVeiculos).map(m => (
-          <Marker key={m.socketId} position={[m.lat, m.lng]} icon={iconeOutroMotorista} />
-        ))}
-
-        {pontos.map(p => (
-          <Marker key={p.id} position={[p.latitude, p.longitude]}>
-            <Popup><strong>{p.nome}</strong><br/>{p.descricao}</Popup>
-          </Marker>
-        ))}
-      </MapContainer>
-
-      <FixedBottomMenu />
+        {/* Base: Barra de Progresso e Menu (SEM GAP) */}
+        <div className="bg-white/95 backdrop-blur-md pointer-events-auto border-t border-gray-200">
+          <ProgressBar progress={calcularProgressoReal()} />
+          <FixedBottomMenu />
+        </div>
+      </div>
     </div>
   );
 }
