@@ -35,3 +35,8 @@
 .read-the-docs {
   color: #888;
 }
+/* src/App.css ou outro arquivo */
+.custom-map-container {
+  height: 65vh;
+  width: 100%;
+}

@@ -175,7 +175,7 @@ function PaginaPrincipal() {
 
       <ProgressBar progress={(rotaCoordenadas.length > 1 ? (indiceAtual / (rotaCoordenadas.length - 1)) * 100 : 0)} />
 
-      <MapContainer center={localizacaoUsuario} zoom={12} className="w-full h-full flex-grow">
+      <MapContainer center={localizacaoUsuario} zoom={12} className="custom-map-container">
         <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
         
         {temPermissaoGps && (
