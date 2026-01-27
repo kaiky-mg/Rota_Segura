@@ -11,30 +11,30 @@ import UserCount from '../components/UserCount';
 import MapaRotaSegura from '../components/MapaRotaSegura';
 
 const SOCKET_URL = import.meta.env.VITE_API_URL;
-// Coordenadas fixas para cálculo de progresso real
+
+// COORDENADAS RETA FINAL ADS - BEMOL
 const MANAUS = [-3.1190, -60.0217];
 const PORTO_VELHO = [-8.7619, -63.9039];
 
 function PaginaPrincipal() {
-  // Inicializamos com MANAUS em vez de null para blindar o mapa contra erros de tipo
+  // Inicializamos com MANAUS para evitar que o mapa receba null e quebre o console
   const [localizacaoUsuario, setLocalizacaoUsuario] = useState(MANAUS);
   const [isNavegando, setIsNavegando] = useState(false);
   const [deviceHeading, setDeviceHeading] = useState(0); 
   const [outrosVeiculos, setOutrosVeiculos] = useState({}); 
-  const [pontos, setPontos] = useState([]); 
+  const [pontos, setPontos] = useState([]); // Inicializado como array vazio
   const socketRef = useRef(null);
   const mapaRef = useRef(null);
 
-  // --- LÓGICA DE ORIENTAÇÃO BLINDADA ---
+  // --- LÓGICA DE ORIENTAÇÃO (BÚSSOLA) BLINDADA ---
   const handleOrientation = useCallback((event) => {
     let heading = 0;
-    if (event.alpha !== null && event.alpha !== undefined) {
-      heading = 360 - event.alpha; // Android absoluto
-    } else if (event.webkitCompassHeading) {
+    if (event.webkitCompassHeading) {
       heading = event.webkitCompassHeading; // iOS
+    } else if (event.alpha !== null && event.alpha !== undefined) {
+      heading = 360 - event.alpha; // Android Absoluto
     }
-    // Forçamos a conversão para número para eliminar o erro 'found null instead'
-    setDeviceHeading(Number(heading) || 0);
+    setDeviceHeading(Number(heading) || 0); // Blindagem contra null/NaN
   }, []);
 
   const toggleNavegacao = async () => {
@@ -57,6 +57,7 @@ function PaginaPrincipal() {
 
   // Cálculo Haversine para progresso dinâmico (resolve os 13%)
   const calcularDistancia = (p1, p2) => {
+    if (!p1 || !p2) return 0;
     const toRad = (v) => (v * Math.PI) / 180;
     const R = 6371; 
     const dLat = toRad(p2[0] - p1[0]);
@@ -75,9 +76,25 @@ function PaginaPrincipal() {
   useEffect(() => {
     let token = localStorage.getItem('userToken') || `motorista_${Math.random().toString(36).substr(2, 9)}`;
     localStorage.setItem('userToken', token);
+    
     socketRef.current = io(SOCKET_URL, { query: { userToken: token }, transports: ['polling', 'websocket'] });
 
-    api.get('/api/pontos-de-apoio').then(res => setPontos(res.data)).catch(e => console.error(e));
+    socketRef.current.on('nova_posicao_veiculo', (dados) => {
+      setOutrosVeiculos(prev => ({ ...prev, [dados.socketId]: dados }));
+    });
+
+    socketRef.current.on('veiculo_saiu', (id) => {
+      setOutrosVeiculos(prev => {
+        const novo = { ...prev };
+        delete novo[id];
+        return novo;
+      });
+    });
+
+    // Busca pontos com validação rigorosa para evitar erro de .map
+    api.get('/api/pontos-de-apoio')
+      .then(res => setPontos(Array.isArray(res.data) ? res.data : []))
+      .catch(() => setPontos([]));
 
     const watchId = navigator.geolocation.watchPosition(
       (pos) => setLocalizacaoUsuario([pos.coords.latitude, pos.coords.longitude]),
@@ -111,15 +128,15 @@ function PaginaPrincipal() {
         </div>
 
         <div className="absolute right-5 bottom-48 flex flex-col gap-4 pointer-events-auto items-end">
-          <button onClick={toggleNavegacao} className="bg-sky-600 text-white font-bold py-3 px-8 rounded-full shadow-lg text-xs uppercase tracking-widest active:scale-95">
+          <button onClick={toggleNavegacao} className="bg-sky-600 text-white font-bold py-3 px-8 rounded-full shadow-lg text-xs uppercase tracking-widest active:scale-95 transition-all">
             {isNavegando ? "Sair da Navegação" : "Iniciar Navegação"}
           </button>
-          <button onClick={() => mapaRef.current?.centralizarNoUsuario()} className="bg-white text-sky-600 font-bold py-3 px-8 rounded-full shadow-lg border-2 border-sky-600 text-xs uppercase tracking-widest active:scale-95">
+          <button onClick={() => mapaRef.current?.centralizarNoUsuario()} className="bg-white text-sky-600 font-bold py-3 px-8 rounded-full shadow-lg border-2 border-sky-600 text-xs uppercase tracking-widest active:scale-95 transition-all">
             Recentrar
           </button>
         </div>
 
-        <div className="pointer-events-auto flex flex-col gap-0 bg-white shadow-[0_-10px_30px_rgba(0,0,0,0.15)]">
+        <div className="pointer-events-auto flex flex-col gap-0 bg-white shadow-[0_-10px_30_rgba(0,0,0,0.15)]">
           <div className="w-full block leading-none overflow-hidden">
             <ProgressBar progress={calcularProgressoReal(localizacaoUsuario)} />
           </div>

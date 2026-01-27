@@ -27,7 +27,6 @@ const MapaRotaSegura = forwardRef(({ posicaoAtiva, destino, isNavegando, outrosV
         zoom: 17, pitch: 65, transitionDuration: 1500 
       }));
     } else if (rotaGeoJSON) {
-      // Zoom automático ao carregar a rota
       const lons = rotaGeoJSON.coordinates.map(c => c[0]);
       const lats = rotaGeoJSON.coordinates.map(c => c[1]);
       mapRef.current?.fitBounds([[Math.min(...lons), Math.min(...lats)], [Math.max(...lons), Math.max(...lats)]], { padding: 80, duration: 2000 });
@@ -48,7 +47,7 @@ const MapaRotaSegura = forwardRef(({ posicaoAtiva, destino, isNavegando, outrosV
         </Source>
       )}
 
-      {/* MARCADOR BLINDADO: Number() || 0 evita crash por null */}
+      {/* MOTORISTA BLINDADO CONTRA NULL */}
       <Marker longitude={Number(posicaoAtiva[1]) || -60.0217} latitude={Number(posicaoAtiva[0]) || -3.1190}>
         <div style={{ transform: isNavegando ? `rotate(${Number(heading) || 0}deg)` : 'none', transition: 'transform 0.1s ease-out' }}>
           {isNavegando ? (
@@ -62,14 +61,15 @@ const MapaRotaSegura = forwardRef(({ posicaoAtiva, destino, isNavegando, outrosV
         </div>
       </Marker>
 
-      {/* CORREÇÃO DO ERRO 'MAP': Mapeando objeto de usuários online */}
+      {/* COLEGAS: Objeto convertido em Array com segurança */}
       {Object.values(outrosVeiculos || {}).map(v => (
         <Marker key={v.socketId} longitude={Number(v.lng) || 0} latitude={Number(v.lat) || 0}>
            <img src="/src/assets/cami.png" className="w-8 opacity-70" alt="colega" />
         </Marker>
       ))}
 
-      {pontos?.map(p => (
+      {/* PONTOS DE APOIO: Blindado contra erro 'not a function' */}
+      {Array.isArray(pontos) && pontos.map(p => (
         <Marker key={p.id} longitude={Number(p.longitude) || 0} latitude={Number(p.latitude) || 0} onClick={e => { e.originalEvent.stopPropagation(); setPontoSelecionado(p); }}>
           <svg width="30" height="30" viewBox="0 0 24 24"><path d="M12 21C16 17 20 13.4183 20 9C20 4.58172 16.4183 1 12 1C7.58172 1 4 4.58172 4 9C4 13.4183 8 17 12 21Z" fill="#0284c7" stroke="white" strokeWidth="2"/><circle cx="12" cy="9" r="3" fill="white"/></svg>
         </Marker>
