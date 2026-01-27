@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useImperativeHandle, forwardRef, useRef } from 'react';
 import Map, { Marker, Source, Layer, Popup } from 'react-map-gl/maplibre';
 import 'maplibre-gl/dist/maplibre-gl.css';
-import caminhaoIcon from '../assets/cami ';
+import caminhaoIcon from '../assets/cami.png';
 
 const MapaRotaSegura = forwardRef(({ posicaoAtiva, destino, isNavegando, outrosVeiculos, pontos, heading }, ref) => {
   const mapRef = useRef();
