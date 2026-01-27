@@ -1,44 +1,26 @@
-# Build stage
-FROM node:slim AS build
+# Estágio 1: Build
+FROM node:18-alpine AS build
 
-WORKDIR /usr/local/app
-
-# Copia apenas os arquivos de dependência primeiro (melhor uso de cache)
-COPY package*.json ./
-RUN npm ci
-
-# --- INJEÇÃO DE VARIÁVEIS DE AMBIENTE ---
-# Definimos o ARG para receber o valor da Pipeline e o ENV para o processo de build
+# Definimos o argumento que receberá a URL real da Azure no comando de build
 ARG VITE_API_URL
+# O Vite precisa que a variável esteja no ambiente ANTES do comando 'build'
 ENV VITE_API_URL=$VITE_API_URL
-# ---------------------------------------
 
-# Copia o restante do código
+WORKDIR /app
+
+COPY package.json package-lock.json ./
+RUN npm install
+
 COPY . .
 
-# Gera build de produção (agora com a variável injetada)
+# O build "queima" a URL definitiva dentro do código estático
 RUN npm run build
 
-# Production stage
+# Estágio 2: Servidor Web (Nginx)
 FROM nginx:stable-alpine
+COPY --from=build /app/dist /usr/share/nginx/html
+# Configuração para SPAs (evita 404 ao atualizar a página)
+RUN echo 'server { listen 80; location / { root /usr/share/nginx/html; index index.html; try_files $uri $uri/ /index.html; } }' > /etc/nginx/conf.d/default.conf
 
-# Copia os arquivos do build para o diretório de publicação do Nginx
-COPY --from=build /usr/local/app/dist /usr/share/nginx/html
-
-# Copia configuração customizada do Nginx
-COPY ./nginx.conf /etc/nginx/conf.d/default.conf
-
-# Define volume opcional para cache
-VOLUME /var/cache/nginx
-
-# Ajusta permissões dos arquivos
-RUN chown -R nginx:nginx /var/cache/nginx /usr/share/nginx/html
-
-# Usa o usuário root para ajustes finais, mas o Nginx rodará conforme config
-USER root
-
-# Expõe a porta padrão
 EXPOSE 80
-
-# Comando para manter o Nginx rodando em foreground
 CMD ["nginx", "-g", "daemon off;"]
