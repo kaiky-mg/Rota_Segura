@@ -5,7 +5,7 @@ parameters:
 - name: bicep
 - name: resourceGroup
 - name: bicepparams
-- name: apiUrl # Novo parâmetro para a URL do Backend
+
 
 steps:
 - task: AzureCLI@2
@@ -50,5 +50,4 @@ steps:
     containerRegistry: ${{parameters.dockerRegistryServiceConnection}}
     tags: |
       ${{parameters.tag}}
-    # Injeta a variável no Docker via Build Argument
-    arguments: '--build-arg VITE_API_URL=${{parameters.apiUrl}}'
+    
