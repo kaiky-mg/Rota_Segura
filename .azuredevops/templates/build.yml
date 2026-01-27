@@ -15,6 +15,20 @@ steps:
     scriptLocation: 'inlineScript'
     inlineScript: 'az deployment group create --resource-group ${{parameters.resourceGroup}} --template-file "$(System.DefaultWorkingDirectory)/.azuredevops/${{parameters.bicep}}" --parameters ./.azuredevops/bicep-params/${{parameters.bicepparams}} --parameters dockerImage=$(Build.buildId) --parameters dockerRepos=${{parameters.imageRepository}}'
 
+- task: replacetokens@3
+  displayName: Replace env vars
+  inputs:
+    targetFiles: '.env'
+    encoding: 'auto'
+    writeBOM: true
+    actionOnMissing: 'fail'
+    keepToken: false
+    tokenPrefix: '$_'
+    tokenSuffix: '_$'
+    useLegacyPattern: false
+    enableTransforms: false
+    enableTelemetry: true
+
 - task: NodeTool@0
   inputs:
     versionSource: 'spec'
