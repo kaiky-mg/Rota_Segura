@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useImperativeHandle, forwardRef, useRef } from 'react';
 import Map, { Marker, Source, Layer, Popup } from 'react-map-gl/maplibre';
 import 'maplibre-gl/dist/maplibre-gl.css';
+import caminhaoIcon from '../assets/cami ';
 
 const MapaRotaSegura = forwardRef(({ posicaoAtiva, destino, isNavegando, outrosVeiculos, pontos, heading }, ref) => {
   const mapRef = useRef();
@@ -56,7 +57,7 @@ const MapaRotaSegura = forwardRef(({ posicaoAtiva, destino, isNavegando, outrosV
               <path d="M25 10L15 30H35L25 10Z" fill="#0284c7"/>
             </svg>
           ) : (
-            <img src="/src/assets/cami.png" className="w-12 drop-shadow-lg" alt="caminhao" />
+            <img src={caminhaoIcon} className="w-12 drop-shadow-lg" alt="caminhao" />
           )}
         </div>
       </Marker>
@@ -64,7 +65,7 @@ const MapaRotaSegura = forwardRef(({ posicaoAtiva, destino, isNavegando, outrosV
       {/* COLEGAS: Objeto convertido em Array com segurança */}
       {Object.values(outrosVeiculos || {}).map(v => (
         <Marker key={v.socketId} longitude={Number(v.lng) || 0} latitude={Number(v.lat) || 0}>
-           <img src="/src/assets/cami.png" className="w-8 opacity-70" alt="colega" />
+           <img src={caminhaoIcon} className="w-8 opacity-70" alt="colega" />
         </Marker>
       ))}
 
