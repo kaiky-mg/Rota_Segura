@@ -1,4 +1,3 @@
-import React from 'react';
 import { useNavigate } from 'react-router-dom';
 
 export default function EscolherTrajeto() {
@@ -14,15 +13,17 @@ export default function EscolherTrajeto() {
   };
 
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f5f5f5' }}>
-      <div style={{ background: '#fff', padding: 40, borderRadius: 12, boxShadow: '0 2px 12px rgba(0,0,0,0.12)', minWidth: 320 }}>
+    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <div style={{ background: '#fff', padding: 40, borderRadius: 12, boxShadow: '0 2px 12px rgba(0,0,0,0.12)', minWidth: 320, textAlign: 'center' }}>
         <h2>Escolha o sentido da rota</h2>
-        <button style={{ padding: '12px 24px', background: '#1976d2', color: '#fff', border: 'none', borderRadius: 6, marginRight: 16, cursor: 'pointer', fontSize: 16 }} onClick={() => handleEscolher('ida')}>
-          Ida para Porto Velho
-        </button>
-        <button style={{ padding: '12px 24px', background: '#fff', color: '#d32f2f', border: '2px solid #d32f2f', borderRadius: 6, cursor: 'pointer', fontSize: 16 }} onClick={() => handleEscolher('volta')}>
-          Volta para Manaus
-        </button>
+        <div style={{ marginTop: '20px' }}>
+          <button style={{ padding: '12px 24px', background: '#1976d2', color: '#fff', border: 'none', borderRadius: 6, marginRight: 16, cursor: 'pointer', fontSize: 16 }} onClick={() => handleEscolher('ida')}>
+            Ida para Porto Velho
+          </button>
+          <button style={{ padding: '12px 24px', background: '#fff', color: '#d32f2f', border: '2px solid #d32f2f', borderRadius: 6, cursor: 'pointer', fontSize: 16 }} onClick={() => handleEscolher('volta')}>
+            Volta para Manaus
+          </button>
+        </div>
       </div>
     </div>
   );

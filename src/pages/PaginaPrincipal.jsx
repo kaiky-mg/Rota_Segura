@@ -8,10 +8,8 @@ import 'leaflet-routing-machine';
 import { useNavigate } from 'react-router-dom';
 import { io } from 'socket.io-client';
 
-// --- IMPORTAÇÃO DO SERVIÇO CENTRALIZADO ---
 import api from '../services/api';
 
-// --- COMPONENTES ---
 import Header from '../components/Header';
 import FloatingActionButton from '../components/FloatingActionButton';
 import ProgressBar from '../components/ProgressBar';
@@ -19,10 +17,10 @@ import FixedBottomMenu from '../components/FixedBottomMenu';
 import WeatherPill from '../components/WeatherPill';
 import UserCount from '../components/UserCount';
 import RotaBR319 from '../components/RotaBR319';
+import ProfileMenu from '../components/ProfileMenu';
 import { calculatePointAhead } from '../utils/calculatePointAhead';
 import caminhaoBemol from '../assets/cami.png';
 
-// --- CONSTANTES DE AMBIENTE E NEGÓCIO ---
 const SOCKET_URL = import.meta.env.VITE_API_URL;
 const ENDPOINTS = {
   PONTOS: '/api/pontos-de-apoio',
@@ -31,7 +29,6 @@ const ENDPOINTS = {
 const CENTRO_PADRAO = [-3.1190, -60.0217]; 
 const PORTO_VELHO = [-8.7619, -63.9039];
 
-// --- CONFIGURAÇÃO DE ÍCONES ---
 const iconeVeiculo = new L.Icon({ iconUrl: caminhaoBemol, iconSize: [32, 32], iconAnchor: [16, 16] });
 const iconeUsuario = new L.Icon({ iconUrl: caminhaoBemol, iconSize: [80, 80], iconAnchor: [40, 40] });
 const iconeOutroMotorista = new L.Icon({
@@ -42,7 +39,6 @@ const iconeOutroMotorista = new L.Icon({
   className: 'opacity-80'
 });
 
-// Componentes Auxiliares de Mapa
 function SeguirUsuario({ posicao }) {
   const map = useMap();
   useEffect(() => { if (posicao) map.flyTo(posicao, map.getZoom(), { animate: true, duration: 1 }); }, [posicao, map]);
@@ -66,12 +62,13 @@ function PaginaPrincipal() {
   const [indiceAtual, setIndiceAtual] = useState(0);
   const [outrosVeiculos, setOutrosVeiculos] = useState({});
   const [modalFimTrajeto, setModalFimTrajeto] = useState(false);
+
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
   
   const movimentoRef = useRef(null);
   const socketRef = useRef(null);
   const navigate = useNavigate();
 
-  // 1. WebSocket Setup
   useEffect(() => {
     let userToken = localStorage.getItem('userToken') || `user_${Date.now()}`;
     localStorage.setItem('userToken', userToken);
@@ -94,7 +91,6 @@ function PaginaPrincipal() {
     return () => socketRef.current?.disconnect();
   }, []);
 
-  // 2. Geolocalização
   useEffect(() => {
     let watchId = navigator.geolocation.watchPosition(
       (pos) => {
@@ -113,14 +109,12 @@ function PaginaPrincipal() {
     return () => navigator.geolocation.clearWatch(watchId);
   }, [emMovimento]);
 
-  // 3. Chamada de API: Buscar Pontos de Apoio
   useEffect(() => {
     api.get(ENDPOINTS.PONTOS)
       .then(res => setPontos(res.data))
       .catch(() => setErro("Não foi possível carregar os pontos de apoio."));
   }, []);
 
-  // 4. Lógica de Simulação
   const pontosOrdenados = [...pontos].sort((a, b) => b.latitude - a.latitude);
   const rotaCoordenadas = pontosOrdenados.map(p => [p.latitude, p.longitude]);
 
@@ -147,7 +141,6 @@ function PaginaPrincipal() {
     }
   };
 
-  // 5. Chamada de API: Clima 20km à frente
   useEffect(() => {
     if (emMovimento && rotaCoordenadas.length > 0) {
       const ponto20km = calculatePointAhead(rotaCoordenadas, 20000);
@@ -204,7 +197,12 @@ function PaginaPrincipal() {
         ))}
       </MapContainer>
 
-      <FixedBottomMenu />
+      <FixedBottomMenu onProfileClick={() => setIsProfileOpen(true)} />
+
+      <ProfileMenu 
+        isOpen={isProfileOpen} 
+        onClose={() => setIsProfileOpen(false)} 
+      />
     </div>
   );
 }

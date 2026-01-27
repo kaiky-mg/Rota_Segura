@@ -1,31 +1,48 @@
-import React from 'react';
+import { Home, AlertTriangle, User } from 'react-feather';
 
-function FixedBottomMenu({ onMenuClick }) {
+const FixedBottomMenu = ({ onProfileClick }) => {
   return (
-    <div className="fixed bottom-0 left-0 w-full bg-white shadow-lg border-t flex justify-around items-center py-2 z-[1001]">
-      <button
-        onClick={() => onMenuClick('rota')}
-        className="flex flex-col items-center text-sm text-gray-600 hover:text-blue-500 transition"
-      >
-        <span className="text-xl">📘</span>
-        <span>Rota</span>
+    <div style={{
+      position: 'fixed',
+      bottom: 0,
+      left: 0,
+      right: 0,
+      display: 'flex',
+      justifyContent: 'space-around',
+      background: 'white',
+      boxShadow: '0 -2px 10px rgba(0, 0, 0, 0.1)',
+      zIndex: 1000,
+      padding: '8px 0'
+    }}>
+      <button style={buttonStyle}>
+        <Home />
+        <span style={labelStyle}>Rota</span>
       </button>
-      <button
-        onClick={() => onMenuClick('alertas')}
-        className="flex flex-col items-center text-sm text-gray-600 hover:text-blue-500 transition"
-      >
-        <span className="text-xl">⚠️</span>
-        <span>Alertas</span>
+      <button style={buttonStyle}>
+        <AlertTriangle />
+        <span style={labelStyle}>Alertas</span>
       </button>
-      <button
-        onClick={() => onMenuClick('perfil')}
-        className="flex flex-col items-center text-sm text-gray-600 hover:text-blue-500 transition"
-      >
-        <span className="text-xl">👤</span>
-        <span>Perfil</span>
+      <button onClick={onProfileClick} style={buttonStyle}>
+        <User />
+        <span style={labelStyle}>Perfil</span>
       </button>
     </div>
   );
-}
+};
+
+const buttonStyle = {
+  background: 'none',
+  border: 'none',
+  display: 'flex',
+  flexDirection: 'column',
+  alignItems: 'center',
+  color: '#555',
+  cursor: 'pointer',
+  fontSize: '12px'
+};
+
+const labelStyle = {
+  marginTop: '4px'
+};
 
 export default FixedBottomMenu;
