@@ -1,6 +1,6 @@
 import React from 'react';
 
-function ProgressBar({ progress, startLocation, endLocation, startTime, remainingTime, arrivalTime }) {
+function ProgressBar({ progress, startLocation = '-', endLocation = '-', startTime = '-', remainingTime = '-', arrivalTime = '-' }) {
   const roundedProgress = Math.round(progress);
 
   return (
