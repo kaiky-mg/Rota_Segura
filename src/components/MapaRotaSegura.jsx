@@ -27,9 +27,8 @@ const MapaRotaSegura = forwardRef(({ posicaoAtiva, destino, isNavegando, outrosV
         latitude: Number(posicaoAtiva[0]) || prev.latitude, 
         zoom: 17, 
         pitch: 65, 
-        bearing: heading, // AQUI ESTÁ A MÁGICA: o mapa vai usar o heading do giroscópio
-        transitionDuration: 1500,
-        transitionInterpolator: new FlyToInterpolator() // Para uma transição mais suave
+        bearing: heading,
+        transitionDuration: 1500
       }));
     } else if (rotaGeoJSON) {
       const lons = rotaGeoJSON.coordinates.map(c => c[0]);
