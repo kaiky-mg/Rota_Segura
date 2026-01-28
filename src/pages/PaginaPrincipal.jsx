@@ -147,8 +147,8 @@ function PaginaPrincipal() {
   return (
     <div className="h-screen w-screen relative overflow-hidden bg-slate-900">
       
-      {/* NOVO CONTAINER: envolve apenas o mapa e aplica a transformação */}
-      <div className={`w-full h-full ${isNavegando ? 'mapa-modo-uber' : ''}`}>
+      {/* O container do mapa também volta ao normal */}
+      <div className="w-full h-full">
         <MapaRotaSegura 
           ref={mapaRef}
           posicaoAtiva={localizacaoUsuario}
