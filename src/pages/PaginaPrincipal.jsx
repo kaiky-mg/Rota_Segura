@@ -5,7 +5,6 @@ import api from '../services/api';
 
 import Header from '../components/Header';
 import ProgressBar from '../components/ProgressBar';
-import FixedBottomMenu from '../components/FixedBottomMenu';
 import WeatherPill from '../components/WeatherPill';
 import UserCount from '../components/UserCount';
 import MapaRotaSegura from '../components/MapaRotaSegura';
@@ -147,45 +146,48 @@ function PaginaPrincipal() {
 
   return (
     <div className="h-screen w-screen relative overflow-hidden bg-slate-900">
-      <MapaRotaSegura 
-        ref={mapaRef}
-        posicaoAtiva={localizacaoUsuario}
-        destino={PORTO_VELHO}
-        isNavegando={isNavegando}
-        outrosVeiculos={outrosVeiculos}
-        pontos={pontos}
-        heading={deviceHeading} 
-      />
+      {/* O mapa e a UI principal agora vivem dentro de um container que será desabilitado */}
+      <div className={isProfileOpen ? 'pointer-events-none' : ''}>
+        <MapaRotaSegura 
+          ref={mapaRef}
+          posicaoAtiva={localizacaoUsuario}
+          destino={PORTO_VELHO}
+          isNavegando={isNavegando}
+          outrosVeiculos={outrosVeiculos}
+          pontos={pontos}
+          heading={deviceHeading} 
+        />
 
-      <div className="absolute inset-0 z-[2000] pointer-events-none flex flex-col justify-between">
-        <div className="pointer-events-auto w-full bg-white shadow-xl border-b border-gray-200">
-          <Header />
-          <div className="absolute top-[70px] left-4"><UserCount socket={socketRef.current} /></div>
-          <div className="absolute top-[70px] right-4"><WeatherPill /></div>
-        </div>
+        <div className="absolute inset-0 z-[1000] flex flex-col justify-between">
+          {/* Conteúdo do Topo */}
+          <div className="pointer-events-auto w-full bg-white shadow-xl border-b border-gray-200">
+            <Header onProfileClick={() => setIsProfileOpen(true)} />
+            <div className="absolute top-[70px] left-4"><UserCount socket={socketRef.current} /></div>
+            <div className="absolute top-[70px] right-4"><WeatherPill /></div>
+          </div>
 
-        <div className="absolute right-5 bottom-48 flex flex-col gap-4 pointer-events-auto items-end">
-          <button onClick={toggleNavegacao} className="bg-sky-600 text-white font-bold py-3 px-8 rounded-full shadow-lg text-xs uppercase tracking-widest active:scale-95 transition-all">
-            {isNavegando ? "Sair da Navegação" : "Iniciar Navegação"}
-          </button>
-          <button onClick={() => mapaRef.current?.centralizarNoUsuario()} className="bg-white text-sky-600 font-bold py-3 px-8 rounded-full shadow-lg border-2 border-sky-600 text-xs uppercase tracking-widest active:scale-95 transition-all">
-            Recentrar
-          </button>
-        </div>
+          {/* Botões de Ação Flutuantes */}
+          <div className="absolute right-5 bottom-40 flex flex-col gap-4 pointer-events-auto items-end">
+            <button onClick={toggleNavegacao} className="bg-sky-600 text-white font-bold py-3 px-8 rounded-full shadow-lg text-xs uppercase tracking-widest active:scale-95 transition-all">
+              {isNavegando ? "Sair da Navegação" : "Iniciar Navegação"}
+            </button>
+            <button onClick={() => mapaRef.current?.centralizarNoUsuario()} className="bg-white text-sky-600 font-bold py-3 px-8 rounded-full shadow-lg border-2 border-sky-600 text-xs uppercase tracking-widest active:scale-95 transition-all">
+              Recentrar
+            </button>
+          </div>
 
-        <div className="pointer-events-auto flex flex-col gap-0 bg-white shadow-[0_-10px_30_rgba(0,0,0,0.15)]">
-          <div className="w-full block leading-none overflow-hidden">
+          {/* Conteúdo da Base */}
+          <div>
             <ProgressBar progress={calcularProgressoReal(localizacaoUsuario)} />
           </div>
-          <FixedBottomMenu onProfileClick={() => setIsProfileOpen(true)} />
-
-          <ProfileMenu 
-            isOpen={isProfileOpen} 
-            onClose={() => setIsProfileOpen(false)} 
-          />
         </div>
       </div>
 
+      {/* O ProfileMenu agora é renderizado FORA do container desabilitado */}
+      <ProfileMenu 
+        isOpen={isProfileOpen} 
+        onClose={() => setIsProfileOpen(false)} 
+      />
     </div>
   );
 }

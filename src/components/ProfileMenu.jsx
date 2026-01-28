@@ -46,10 +46,30 @@ const ProfileMenu = ({ isOpen, onClose }) => {
       <div 
         onClick={(e) => e.stopPropagation()}
         style={{
+          position: 'relative', // Adicionado para posicionar o botão de fechar
           background: '#fff', borderRadius: 12, boxShadow: '0 4px 20px rgba(0,0,0,0.2)',
           width: '90%', maxWidth: 320, padding: '20px', textAlign: 'center'
         }}
       >
+        {/* Botão de Fechar (X) */}
+        <button 
+          onClick={onClose}
+          style={{
+            position: 'absolute',
+            top: 8,
+            right: 8,
+            background: 'transparent',
+            border: 'none',
+            fontSize: 24,
+            cursor: 'pointer',
+            color: '#888',
+            lineHeight: 1,
+            padding: 5
+          }}
+        >
+          &times;
+        </button>
+
         <img 
           src={profilePhoto || 'https://via.placeholder.com/96'} 
           alt="Perfil" 
