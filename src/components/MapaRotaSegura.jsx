@@ -5,7 +5,7 @@ import caminhaoIcon from '../assets/cami.png';
 
 const MapaRotaSegura = forwardRef(({ posicaoAtiva, destino, isNavegando, outrosVeiculos, pontos, heading }, ref) => {
   const mapRef = useRef();
-  const [viewState, setViewState] = useState({ longitude: -60.0217, latitude: -3.1190, zoom: 8, pitch: 0 });
+  const [viewState, setViewState] = useState({ longitude: -60.0217, latitude: -3.1190, zoom: 8, pitch: 0, bearing: 0 }); // Adicionado bearing inicial
   const [rotaGeoJSON, setRotaGeoJSON] = useState(null);
   const [pontoSelecionado, setPontoSelecionado] = useState(null);
 
@@ -25,14 +25,18 @@ const MapaRotaSegura = forwardRef(({ posicaoAtiva, destino, isNavegando, outrosV
         ...prev, 
         longitude: Number(posicaoAtiva[1]) || prev.longitude, 
         latitude: Number(posicaoAtiva[0]) || prev.latitude, 
-        zoom: 17, pitch: 65, transitionDuration: 1500 
+        zoom: 17, 
+        pitch: 65, 
+        bearing: heading, // AQUI ESTÁ A MÁGICA: o mapa vai usar o heading do giroscópio
+        transitionDuration: 1500,
+        transitionInterpolator: new FlyToInterpolator() // Para uma transição mais suave
       }));
     } else if (rotaGeoJSON) {
       const lons = rotaGeoJSON.coordinates.map(c => c[0]);
       const lats = rotaGeoJSON.coordinates.map(c => c[1]);
       mapRef.current?.fitBounds([[Math.min(...lons), Math.min(...lats)], [Math.max(...lons), Math.max(...lats)]], { padding: 80, duration: 2000 });
     }
-  }, [isNavegando, rotaGeoJSON, posicaoAtiva]);
+  }, [isNavegando, rotaGeoJSON, posicaoAtiva, heading]); // Adicionado 'heading' às dependências
 
   useImperativeHandle(ref, () => ({
     centralizarNoUsuario: () => {
