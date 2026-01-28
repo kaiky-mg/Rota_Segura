@@ -51,7 +51,12 @@ steps:
     containerRegistry: ${{parameters.dockerRegistryServiceConnection}}
     tags: |
       ${{parameters.tag}}
-    arguments: '--build-arg VITE_API_URL=$(VITE_API_URL)' # Agora este argumento será usado!
+    arguments: >-
+      --build-arg VITE_API_URL=$(VITE_API_URL)
+      --build-arg VITE_AUTHORITY=$(VITE_AUTHORITY)
+      --build-arg VITE_CLIENT_ID=$(VITE_CLIENT_ID)
+      --build-arg VITE_POST_LOGOUT_REDIRECT_URI=$(VITE_POST_LOGOUT_REDIRECT_URI)
+      --build-arg VITE_REDIRECT_URI=$(VITE_REDIRECT_URI)
 
 # TAREFA 2: Apenas Push
 - task: Docker@2
