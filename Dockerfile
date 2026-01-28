@@ -1,4 +1,4 @@
-FROM node:18-alpine AS build
+FROM node:18-slim AS build
 
 ARG VITE_API_URL
 ARG VITE_AUTHORITY
@@ -7,6 +7,8 @@ ARG VITE_POST_LOGOUT_REDIRECT_URI
 ARG VITE_CLIENT_ID
 
 WORKDIR /app
+
+RUN apk add --no-cache libc6-compat
 
 COPY package*.json ./
 
