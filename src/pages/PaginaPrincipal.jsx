@@ -145,16 +145,20 @@ function PaginaPrincipal() {
   }, []);
 
   return (
-    <div className={`h-screen w-screen relative overflow-hidden bg-slate-900 ${isNavegando ? 'mapa-modo-uber' : ''}`}>
-      <MapaRotaSegura 
-        ref={mapaRef}
-        posicaoAtiva={localizacaoUsuario}
-        destino={PORTO_VELHO}
-        isNavegando={isNavegando}
-        outrosVeiculos={outrosVeiculos}
-        pontos={pontos}
-        heading={deviceHeading} 
-      />
+    <div className="h-screen w-screen relative overflow-hidden bg-slate-900">
+      
+      {/* NOVO CONTAINER: envolve apenas o mapa e aplica a transformação */}
+      <div className={`w-full h-full ${isNavegando ? 'mapa-modo-uber' : ''}`}>
+        <MapaRotaSegura 
+          ref={mapaRef}
+          posicaoAtiva={localizacaoUsuario}
+          destino={PORTO_VELHO}
+          isNavegando={isNavegando}
+          outrosVeiculos={outrosVeiculos}
+          pontos={pontos}
+          heading={deviceHeading} 
+        />
+      </div>
 
       {/* Header posicionado de forma absoluta no topo */}
       <div className="absolute top-0 left-0 right-0 z-[1000] pointer-events-auto">
@@ -171,7 +175,7 @@ function PaginaPrincipal() {
           {isNavegando ? "Sair da Navegação" : "Iniciar Navegação"}
         </button>
         <button onClick={() => mapaRef.current?.centralizarNoUsuario()} className="bg-white text-sky-600 font-bold py-3 px-8 rounded-full shadow-lg border-2 border-sky-600 text-xs uppercase tracking-widest active:scale-95 transition-all">
-          Recentralizar
+          Recentrar
         </button>
       </div>
 
