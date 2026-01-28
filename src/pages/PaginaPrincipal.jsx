@@ -169,18 +169,13 @@ function PaginaPrincipal() {
         <div className="absolute top-[70px] right-4"><WeatherPill /></div>
       </div>
 
-      {/* Botões de Ação Flutuantes, posicionados de forma absoluta */}
-      <div className="absolute right-5 bottom-40 z-[1000] flex flex-col gap-4 pointer-events-auto">
-        <button onClick={toggleNavegacao} className="bg-sky-600 text-white font-bold py-3 px-8 rounded-full shadow-lg text-xs uppercase tracking-widest active:scale-95 transition-all">
-          {isNavegando ? "Sair da Navegação" : "Iniciar Navegação"}
-        </button>
-        <button onClick={() => mapaRef.current?.centralizarNoUsuario()} className="bg-white text-sky-600 font-bold py-3 px-8 rounded-full shadow-lg border-2 border-sky-600 text-xs uppercase tracking-widest active:scale-95 transition-all">
-          Recentralizar 
-        </button>
-      </div>
-
-      {/* ProgressBar, cujo posicionamento fixo já a coloca em sua própria camada */}
-      <ProgressBar progress={calcularProgressoReal(localizacaoUsuario)} />
+      {/* ProgressBar agora é o nosso painel de controle */}
+      <ProgressBar 
+        progress={calcularProgressoReal(localizacaoUsuario)}
+        isNavegando={isNavegando}
+        onToggleNavegacao={toggleNavegacao}
+        onRecentrar={() => mapaRef.current?.centralizarNoUsuario()}
+      />
 
       {/* ProfileMenu, que também usa posicionamento fixo e z-index alto */}
       <ProfileMenu 
