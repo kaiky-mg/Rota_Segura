@@ -1,5 +1,3 @@
-
-
 .logo {
   height: 6em;
   padding: 1.5em;
@@ -52,13 +50,6 @@
   width: 100%;
   height: 100%;
   transition: all 1s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-/* A "Mágica" do Uber: perspectiva real */
-.mapa-modo-uber {
-  /* perspective: profundidade; rotateX: inclinação; scale: preenche as bordas; translateY: sobe o mapa */
-  transform: perspective(1200px) rotateX(55deg) scale(1.5) translateY(-10%);
-  transform-origin: bottom center;
 }
 
 /* Desinclina os ícones para eles não ficarem "deitados" no chão */
