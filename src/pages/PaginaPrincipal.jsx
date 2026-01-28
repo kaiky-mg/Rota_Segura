@@ -9,6 +9,10 @@ import FixedBottomMenu from '../components/FixedBottomMenu';
 import WeatherPill from '../components/WeatherPill';
 import UserCount from '../components/UserCount';
 import MapaRotaSegura from '../components/MapaRotaSegura';
+import RotaBR319 from '../components/RotaBR319';
+import ProfileMenu from '../components/ProfileMenu';
+import { calculatePointAhead } from '../utils/calculatePointAhead';
+import caminhaoBemol from '../assets/cami.png';
 
 const SOCKET_URL = import.meta.env.VITE_API_URL;
 
@@ -16,13 +20,46 @@ const SOCKET_URL = import.meta.env.VITE_API_URL;
 const MANAUS = [-3.1190, -60.0217];
 const PORTO_VELHO = [-8.7619, -63.9039];
 
+const iconeVeiculo = new L.Icon({ iconUrl: caminhaoBemol, iconSize: [32, 32], iconAnchor: [16, 16] });
+const iconeUsuario = new L.Icon({ iconUrl: caminhaoBemol, iconSize: [80, 80], iconAnchor: [40, 40] });
+const iconeOutroMotorista = new L.Icon({
+  iconUrl: caminhaoBemol,
+  iconSize: [40, 40],
+  iconAnchor: [20, 20],
+  popupAnchor: [0, -20],
+  className: 'opacity-80'
+});
+
+function SeguirUsuario({ posicao }) {
+  const map = useMap();
+  useEffect(() => { if (posicao) map.flyTo(posicao, map.getZoom(), { animate: true, duration: 1 }); }, [posicao, map]);
+  return null;
+}
+
+function SeguirSimulacao({ posicao }) {
+  const map = useMap();
+  useEffect(() => { if (posicao) map.setView(posicao); }, [posicao, map]);
+  return null;
+}
+
 function PaginaPrincipal() {
   // Inicializamos com MANAUS para evitar que o mapa receba null e quebre o console
   const [localizacaoUsuario, setLocalizacaoUsuario] = useState(MANAUS);
   const [isNavegando, setIsNavegando] = useState(false);
   const [deviceHeading, setDeviceHeading] = useState(0); 
-  const [outrosVeiculos, setOutrosVeiculos] = useState({}); 
-  const [pontos, setPontos] = useState([]); // Inicializado como array vazio
+  const [pontos, setPontos] = useState([]);
+  const [erro, setErro] = useState(null);
+  const [obtendoLocalizacao, setObtendoLocalizacao] = useState(true);
+  const [temPermissaoGps, setTemPermissaoGps] = useState(false);
+  const [clima, setClima] = useState({});
+  const [emMovimento, setEmMovimento] = useState(false);
+  const [indiceAtual, setIndiceAtual] = useState(0);
+  const [outrosVeiculos, setOutrosVeiculos] = useState({});
+  const [modalFimTrajeto, setModalFimTrajeto] = useState(false);
+
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
+  
+  const movimentoRef = useRef(null);
   const socketRef = useRef(null);
   const mapaRef = useRef(null);
 
@@ -140,9 +177,15 @@ function PaginaPrincipal() {
           <div className="w-full block leading-none overflow-hidden">
             <ProgressBar progress={calcularProgressoReal(localizacaoUsuario)} />
           </div>
-          <FixedBottomMenu />
+          <FixedBottomMenu onProfileClick={() => setIsProfileOpen(true)} />
+
+          <ProfileMenu 
+            isOpen={isProfileOpen} 
+            onClose={() => setIsProfileOpen(false)} 
+          />
         </div>
       </div>
+
     </div>
   );
 }

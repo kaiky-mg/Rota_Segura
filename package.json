@@ -10,6 +10,8 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@azure/msal-browser": "^5.0.2",
+    "@azure/msal-react": "^5.0.2",
     "@tailwindcss/vite": "^4.1.17",
     "axios": "^1.13.2",
     "leaflet": "^1.9.4",
@@ -17,6 +19,7 @@
     "maplibre-gl": "^5.16.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
+    "react-feather": "^2.0.10",
     "react-leaflet": "^5.0.0",
     "react-map-gl": "^8.1.0",
     "react-router-dom": "^7.10.1",
@@ -27,7 +30,7 @@
     "@eslint/js": "^9.39.1",
     "@types/react": "^19.2.2",
     "@types/react-dom": "^19.2.2",
-    "@vitejs/plugin-basic-ssl": "^2.1.0",
+    "@vitejs/plugin-basic-ssl": "^2.1.4",
     "@vitejs/plugin-react": "^5.1.0",
     "baseline-browser-mapping": "^2.9.18",
     "eslint": "^9.39.1",
