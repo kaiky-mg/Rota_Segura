@@ -13,7 +13,10 @@ RUN npm install
 
 COPY . .
 
-# O build "queima" a URL definitiva dentro do código estático
+# Defina a ARG como ENV para que o Vite possa acessá-la durante o build
+ARG VITE_API_URL
+ENV VITE_API_URL=$VITE_API_URL
+
 RUN npm run build
 
 # Estágio 2: Servidor Web (Nginx)
