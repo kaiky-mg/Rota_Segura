@@ -1,4 +1,4 @@
-FROM node:18-slim AS build
+FROM node:20-slim AS build
 
 ARG VITE_API_URL
 ARG VITE_AUTHORITY
