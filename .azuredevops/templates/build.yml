@@ -5,7 +5,7 @@ parameters:
 - name: bicep
 - name: resourceGroup
 - name: bicepparams
-- name: apiUrl # Novo parâmetro para a URL do Backend
+
 
 steps:
 - task: AzureCLI@2
@@ -14,6 +14,20 @@ steps:
     scriptType: 'pscore'
     scriptLocation: 'inlineScript'
     inlineScript: 'az deployment group create --resource-group ${{parameters.resourceGroup}} --template-file "$(System.DefaultWorkingDirectory)/.azuredevops/${{parameters.bicep}}" --parameters ./.azuredevops/bicep-params/${{parameters.bicepparams}} --parameters dockerImage=$(Build.buildId) --parameters dockerRepos=${{parameters.imageRepository}}'
+
+- task: replacetokens@3
+  displayName: Replace env vars
+  inputs:
+    targetFiles: '.env'
+    encoding: 'auto'
+    writeBOM: true
+    actionOnMissing: 'fail'
+    keepToken: false
+    tokenPrefix: '$_'
+    tokenSuffix: '_$'
+    useLegacyPattern: false
+    enableTransforms: false
+    enableTelemetry: true
 
 - task: NodeTool@0
   inputs:
@@ -27,14 +41,24 @@ steps:
     command: 'ci'
     workingDir: '$(Build.SourcesDirectory)'
 
+# TAREFA 1: Apenas Build
 - task: Docker@2
-  displayName: Build and push an image to container registry
+  displayName: Build an image
   inputs:
-    command: buildAndPush
+    command: build
     repository: '${{parameters.imageRepository}}'
     dockerfile: $(dockerfilePath)
     containerRegistry: ${{parameters.dockerRegistryServiceConnection}}
     tags: |
       ${{parameters.tag}}
-    # Injeta a variável no Docker via Build Argument
-    arguments: '--build-arg VITE_API_URL=${{parameters.apiUrl}}'
+    arguments: '--build-arg VITE_API_URL=$(VITE_API_URL)' # Agora este argumento será usado!
+
+# TAREFA 2: Apenas Push
+- task: Docker@2
+  displayName: Push image to container registry
+  inputs:
+    command: push
+    repository: '${{parameters.imageRepository}}'
+    containerRegistry: ${{parameters.dockerRegistryServiceConnection}}
+    tags: |
+      ${{parameters.tag}}

@@ -1,10 +1,10 @@
 import React from 'react';
 
-function ProgressBar({ progress, startLocation, endLocation, startTime, remainingTime, arrivalTime }) {
+function ProgressBar({ progress, startLocation = '-', endLocation = '-', startTime = '-', remainingTime = '-', arrivalTime = '-' }) {
   const roundedProgress = Math.round(progress);
 
   return (
-    <div className="fixed bottom-30 left-0 w-full bg-white shadow-lg rounded-lg p-4 z-[1000]">
+    <div className="fixed bottom-8 left-0 w-full bg-white shadow-lg rounded-lg p-4 z-[1000]">
       <h2 className="text-lg font-semibold mb-2">Progresso da Viagem</h2>
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center">

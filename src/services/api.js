@@ -5,3 +5,4 @@ const api = axios.create({
 });
 console.log('API baseURL:', api.defaults.baseURL);
 export default api;
+console.log(import.meta.env);

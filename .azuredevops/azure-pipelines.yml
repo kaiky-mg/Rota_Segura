@@ -13,7 +13,6 @@ variables:
   vmImageName: ubuntu-latest
   dockerfilePath: $(Build.SourcesDirectory)/Dockerfile
   # Defina aqui a URL que o Frontend deve usar
-  VITE_API_URL: 'https://rotasegura-back-qas.azurewebsites.net'
 
 pool:
   vmImage: $(vmImageName)
@@ -42,11 +41,12 @@ stages:
       - job: Build
         displayName: Build
         condition: eq(variables['Build.SourceBranch'], 'refs/heads/dev')
+        variables:
+          - group: rotasegura-front-qas
         steps:
           - template: templates/build.yml
             parameters:
               tag: $(tag)
-              apiUrl: $(VITE_API_URL) # Passa a URL para o template
               bicep: main.bicep
               bicepparams: params-qas.json
               resourceGroup: RGROTASEGURAMVPQAS
