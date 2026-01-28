@@ -3,8 +3,9 @@ import React from 'react';
 function ProgressBar({ progress, startLocation = '-', endLocation = '-', startTime = '-', remainingTime = '-', arrivalTime = '-' }) {
   const roundedProgress = Math.round(progress);
 
+  // A MÁGICA ESTÁ AQUI: position:fixed, bottom:0 e z-index alto
   return (
-    <div className="w-full bg-white shadow-lg rounded-lg p-4">
+    <div className="fixed bottom-0 left-0 w-full bg-white shadow-lg rounded-t-lg p-4 z-[1000]">
       <h2 className="text-lg font-semibold mb-2">Progresso da Viagem</h2>
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center">
@@ -23,7 +24,7 @@ function ProgressBar({ progress, startLocation = '-', endLocation = '-', startTi
           style={{ width: `${roundedProgress}%` }}
         ></div>
       </div>
-      <div className="flex justify-between text-sm text-gray-600">
+      {/* <div className="flex justify-between text-sm text-gray-600">
         <div>
           <strong>Início:</strong> {startTime}
         </div>
@@ -33,7 +34,7 @@ function ProgressBar({ progress, startLocation = '-', endLocation = '-', startTi
         <div>
           <strong>Previsão de Chegada:</strong> {arrivalTime}
         </div>
-      </div>
+      </div> */}
     </div>
   );
 }

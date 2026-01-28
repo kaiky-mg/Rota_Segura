@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import '../App.css'; // Garanta que App.css está importado para usar .mapa-modo-uber
+import '../App.css';
 import { io } from 'socket.io-client';
 import api from '../services/api'; 
 
@@ -147,7 +147,7 @@ function PaginaPrincipal() {
   return (
     <div className="h-screen w-screen relative overflow-hidden bg-slate-900">
       
-      {/* O container do mapa também volta ao normal */}
+      {/* Container do mapa, sem a classe 'mapa-modo-uber' */}
       <div className="w-full h-full">
         <MapaRotaSegura 
           ref={mapaRef}
@@ -175,7 +175,7 @@ function PaginaPrincipal() {
           {isNavegando ? "Sair da Navegação" : "Iniciar Navegação"}
         </button>
         <button onClick={() => mapaRef.current?.centralizarNoUsuario()} className="bg-white text-sky-600 font-bold py-3 px-8 rounded-full shadow-lg border-2 border-sky-600 text-xs uppercase tracking-widest active:scale-95 transition-all">
-          Recentrar
+          Recentralizar 
         </button>
       </div>
 
