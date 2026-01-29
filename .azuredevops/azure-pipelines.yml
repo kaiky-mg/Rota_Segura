@@ -1,0 +1,60 @@
+trigger:
+  - main
+  - dev
+resources:
+  repositories:
+    - repository: owaspZap
+      type: git
+      name: Infraestrutura/owaspZap
+variables:
+  tag: $(Build.BuildId)
+  vmImageName: ubuntu-latest
+  dockerfilePath: $(Build.SourcesDirectory)/Dockerfile
+  #envtargetFile: 
+pool:
+  vmImage: $(vmImageName)
+stages:
+  - stage: DevSecOps
+    displayName: Analise de Segurança
+    jobs:
+      - job: SCANGITLEAKS
+        displayName: Scaneamento de repositorio com GitLeaks
+        variables:
+          - name: projectName
+            value: $[variables['System.TeamProject']]
+          - group: Code_Analysis
+
+        pool:
+          vmImage: $(vmImageName)
+        steps:
+          - template: gitleaks.yml@owaspZap
+            parameters:
+              branchName: $(Build.SourceBranchName)
+              repositoryName: $(Build.Repository.Name)
+              azureSubscription: RGBRZPIPELINESDEVSECOPS-Projetos RH
+
+  - stage: Build
+    jobs:
+      - job: Build
+        displayName: Build
+        condition: eq(variables['Build.SourceBranch'], 'refs/heads/dev')
+        steps:
+          - template: templates/build.yml
+            parameters:
+              tag: $(tag)
+              bicep: main.bicep
+              bicepparams: params-qas.json
+              resourceGroup: RGROTASEGURAMVPQAS
+              imageRepository: front-img
+              dockerRegistryServiceConnection: acrrotaseguraqas
+
+        # - job: Bulid_PRD
+        #   displayName: Bulid_PRD
+        #   condition: eq(variables['Build.SourceBranch'], 'refs/heads/master')
+        #   steps:
+        #   - template: templates/build.yml
+        #     parameters:
+        #       tag: $(tag)
+        #       bicep: .bicep
+        #       bicepparams: params.json
+        #       resourceGroup: NOMEDORG
