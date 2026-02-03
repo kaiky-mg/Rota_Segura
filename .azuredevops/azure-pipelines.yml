@@ -1,18 +1,22 @@
 trigger:
   - main
   - dev
+
 resources:
   repositories:
     - repository: owaspZap
       type: git
       name: Infraestrutura/owaspZap
+
 variables:
   tag: $(Build.BuildId)
   vmImageName: ubuntu-latest
   dockerfilePath: $(Build.SourcesDirectory)/Dockerfile
-  #envtargetFile: 
+  # Defina aqui a URL que o Frontend deve usar
+
 pool:
   vmImage: $(vmImageName)
+
 stages:
   - stage: DevSecOps
     displayName: Analise de Segurança
@@ -23,7 +27,6 @@ stages:
           - name: projectName
             value: $[variables['System.TeamProject']]
           - group: Code_Analysis
-
         pool:
           vmImage: $(vmImageName)
         steps:
@@ -38,6 +41,8 @@ stages:
       - job: Build
         displayName: Build
         condition: eq(variables['Build.SourceBranch'], 'refs/heads/dev')
+        variables:
+          - group: rotasegura-front-qas
         steps:
           - template: templates/build.yml
             parameters:
@@ -52,11 +57,11 @@ stages:
         displayName: Bulid_PRD
         condition: eq(variables['Build.SourceBranch'], 'refs/heads/main')
         steps:
-        - template: templates/build.yml
-          parameters:
-            tag: $(tag)
-            bicep: main.bicep
-            bicepparams: params-prd.json
-            resourceGroup: RGROTASEGURAMVPPRD
-            imageRepository: front-img
-            dockerRegistryServiceConnection: acrrotaseguraprd
+          - template: templates/build.yml
+            parameters:
+              tag: $(tag)
+              bicep: main.bicep
+              bicepparams: params-prd.json
+              resourceGroup: RGROTASEGURAMVPPRD
+              imageRepository: front-img
+              dockerRegistryServiceConnection: acrrotaseguraprd
