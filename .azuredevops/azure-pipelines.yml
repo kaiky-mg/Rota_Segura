@@ -48,13 +48,15 @@ stages:
               imageRepository: front-img
               dockerRegistryServiceConnection: acrrotaseguraqas
 
-        # - job: Bulid_PRD
-        #   displayName: Bulid_PRD
-        #   condition: eq(variables['Build.SourceBranch'], 'refs/heads/master')
-        #   steps:
-        #   - template: templates/build.yml
-        #     parameters:
-        #       tag: $(tag)
-        #       bicep: .bicep
-        #       bicepparams: params.json
-        #       resourceGroup: NOMEDORG
+      - job: Bulid_PRD
+        displayName: Bulid_PRD
+        condition: eq(variables['Build.SourceBranch'], 'refs/heads/main')
+        steps:
+        - template: templates/build.yml
+          parameters:
+            tag: $(tag)
+            bicep: main.bicep
+            bicepparams: params-prd.json
+            resourceGroup: RGROTASEGURAMVPPRD
+            imageRepository: front-img
+            dockerRegistryServiceConnection: acrrotaseguraprd

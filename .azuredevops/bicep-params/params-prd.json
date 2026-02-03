@@ -1,0 +1,36 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+      "appName": {
+          "value": "rotasegura"
+      },
+      "sku": {
+          "value": "B2"
+      },
+      "ambiente":{
+          "value":"prd"
+      },
+      "tipo":{
+          "value":"front"
+      },
+      "product":{
+          "value":"Rotasegura"
+      },
+      "project":{
+          "value":"Rotasegura-MVP"
+      },
+      "cost_center":{
+          "value":"300500"
+      },
+      
+     "acrname":{
+        "value":"acrrotaseguraprd"
+     },
+
+     "applicationkey":{
+        "value":"8f526c1d-e9cb-408f-a7db-bd960c017349"
+     }
+    
+   }
+}
