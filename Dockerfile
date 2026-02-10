@@ -22,9 +22,6 @@ ENV VITE_REDIRECT_URI=$VITE_REDIRECT_URI
 ENV VITE_POST_LOGOUT_REDIRECT_URI=$VITE_POST_LOGOUT_REDIRECT_URI
 ENV VITE_CLIENT_ID=$VITE_CLIENT_ID
 
-RUN echo "--- Listando arquivos em /app ---"
-RUN ls -la /app
-
 RUN npm run build
 
 FROM nginx:stable-alpine
