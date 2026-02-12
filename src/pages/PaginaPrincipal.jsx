@@ -18,6 +18,8 @@ const SOCKET_URL = import.meta.env.VITE_API_URL;
 // COORDENADAS RETA FINAL ADS - BEMOL
 const MANAUS = [-3.1190, -60.0217];
 const PORTO_VELHO = [-8.7619, -63.9039];
+// so pra versionar 
+
 
 const iconeVeiculo = new L.Icon({ iconUrl: caminhaoBemol, iconSize: [32, 32], iconAnchor: [16, 16] });
 const iconeUsuario = new L.Icon({ iconUrl: caminhaoBemol, iconSize: [80, 80], iconAnchor: [40, 40] });
