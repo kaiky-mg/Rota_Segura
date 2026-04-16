@@ -61,6 +61,7 @@ function PaginaPrincipal() {
   const [modalFimTrajeto, setModalFimTrajeto] = useState(false);
 
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [socket, setSocket] = useState(null);
   
   const movimentoRef = useRef(null);
   const socketRef = useRef(null);
@@ -118,6 +119,7 @@ function PaginaPrincipal() {
     localStorage.setItem('userToken', token);
     
     socketRef.current = io(SOCKET_URL, { query: { userToken: token }, transports: ['polling', 'websocket'] });
+    setSocket(socketRef.current);
 
     socketRef.current.on('nova_posicao_veiculo', (dados) => {
       setOutrosVeiculos(prev => ({ ...prev, [dados.socketId]: dados }));
@@ -173,7 +175,7 @@ function PaginaPrincipal() {
         <div className="bg-white shadow-xl border-b border-gray-200">
           <Header onProfileClick={() => setIsProfileOpen(true)} />
         </div>
-        <div className="absolute top-[70px] left-4"><UserCount socket={socketRef.current} /></div>
+        <div className="absolute top-[70px] left-4"><UserCount socket={socket} /></div>
         <div className="absolute top-[70px] right-4"><WeatherPill condition={clima.condition} temp={clima.temp} isCritical={clima.isCritical} mensagem={clima.mensagem} /></div>
       </div>
 
