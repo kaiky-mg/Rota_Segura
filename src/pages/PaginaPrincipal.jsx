@@ -12,6 +12,8 @@ import RotaBR319 from '../components/RotaBR319';
 import ProfileMenu from '../components/ProfileMenu';
 import { calculatePointAhead } from '../utils/calculatePointAhead';
 import caminhaoBemol from '../assets/cami.png';
+import AlertaFlutuante from '../components/AlertaFlutuante';
+import MenuReportar from '../components/MenuReportar';
 
 const SOCKET_URL = import.meta.env.VITE_API_URL;
 
@@ -129,6 +131,10 @@ function PaginaPrincipal() {
       });
     });
 
+    socketRef.current.on('atualizacao_clima', (dados) => {
+      setClima(dados);
+    });
+
     // Busca pontos com validação rigorosa para evitar erro de .map
     api.get('/api/pontos-de-apoio')
       .then(res => setPontos(Array.isArray(res.data) ? res.data : []))
@@ -168,7 +174,7 @@ function PaginaPrincipal() {
           <Header onProfileClick={() => setIsProfileOpen(true)} />
         </div>
         <div className="absolute top-[70px] left-4"><UserCount socket={socketRef.current} /></div>
-        <div className="absolute top-[70px] right-4"><WeatherPill /></div>
+        <div className="absolute top-[70px] right-4"><WeatherPill condition={clima.condition} temp={clima.temp} isCritical={clima.isCritical} mensagem={clima.mensagem} /></div>
       </div>
 
       {/* ProgressBar agora é o nosso painel de controle */}
@@ -184,6 +190,9 @@ function PaginaPrincipal() {
         isOpen={isProfileOpen} 
         onClose={() => setIsProfileOpen(false)} 
       />
+      <AlertaFlutuante /> {/* Componente para exibir alertas de obstáculos em tempo real */}
+
+      <MenuReportar /> {/* Componente para reportar perigos, posicionado de forma fixa */}
     </div>
   );
 }

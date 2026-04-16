@@ -6,6 +6,7 @@ import PaginaPrincipal from './pages/PaginaPrincipal';
 import EscolherTrajeto from './pages/EscolherTrajeto';
 import LoginScreen from './pages/Login';
 import AuthenticatedLayout from './components/AuthenticatedLayout';
+ // teste
 
 function App() {
   return (
